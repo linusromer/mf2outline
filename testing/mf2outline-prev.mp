@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20150301prev";
+string base_name, base_version; base_name="mf2outline"; base_version="20150302prev";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -643,7 +643,9 @@ def endchar =
     special "% mf2outline: charht " & decimal charht;
     special "% mf2outline: chardp " & decimal chardp;
     special "% mf2outline: charic " & decimal charic;
+    special "% mf2outline: charcode " & decimal charcode;
     special "% mf2outline: charext " & decimal charext;
+    special "% mf2outline: charunicode " & charunicode;
     shipit;
   endgroup
 enddef;

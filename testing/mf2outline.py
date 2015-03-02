@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20150226
+#mf2outline version 20150302
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -62,17 +62,17 @@ if __name__ == "__main__":
 	parser.add_argument("-v", "--verbose",
 		action='store_true',
 		default=False,
-		help="explain what is being done")
+		help="Explain what is being done.")
 	parser.add_argument("-vv", "--veryverbose",
 		action='store_true',
 		default=False,
-		help="explain very detailed what is being done")
+		help="Explain very detailed what is being done.")
 	parser.add_argument("--designsize", 
 		dest = "designsize",
 		metavar = "SIZE",
 		type = float,
 		default = None,
-		help="The first guess of the design size will be SIZE (default: 10.0)")	
+		help="Force the designsize to be SIZE (e.g. 12 for 12pt).")	
 	parser.add_argument("--raw",
 		action="store_true",
 		dest="raw",
@@ -82,76 +82,99 @@ if __name__ == "__main__":
 		action="store_true",
 		dest="preview",
 		default=False,
-		help="Preview generates only few letters and uses polygon pens instead of circle/elliptic pens")
+		help="Generate only the most important letters, use icosagon pens " \
+		"instead of circle/elliptic pens and do not care about advanced font " \
+		"features like kerning and ligatures (mainly used for METAFLOP). " \
+		"List of letters: ! & ( ) , - . / 0 1 2 3 4 5 6 7 8 9 ? A B C D E F G H " \
+		"I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p " \
+		"q r s t u v w x y z")
 	parser.add_argument("-f", "--formats",
 		action="append",
 		dest="formats",
 		default=[],
-		help="Which formats to generate (choices: sfd, afm, pfa, pfb, otf, ttf, eoff, svg, tfm)")
+		help="Generate outline fonts in the formats FORMATS (comma" \
+		"separated list). Supported formats: sfd, afm, pfa, pfb, " \
+		"otf, ttf, eoff, svg, tfm. Default: otf")
 	parser.add_argument("--encoding", 
 		dest="encoding",
 		metavar="ENC",
 		type=str,
 		default="unicode",
-		help="The first guess of the font encoding will be ENC (default: unicode)")	
+		help="Force the font encoding to be ENC. Natively supported " \
+		"encodings: ot1, t1, unicode. Default: unicode. The file " \
+		"ENC.enc will be read if it exists in the same directory as " \
+		"the source file (the encoding name inside the encoding file "\
+		"must be named ENC, too).")	
 	parser.add_argument("--fullname", 
 		dest="fullname",
 		metavar="FULL",
 		type=str,
 		default="Unknown",
-		help="The full name of the font with modifiers and possible spaces")	
+		help="Set the full name to FULL (with modifiers and possible spaces).")	
 	parser.add_argument("--fontname", 
 		dest="fontname",
 		metavar="NAME",
 		type=str,
 		default="Unknown",
-		help="The full name of the font with modifiers and without spaces")	
+		help="Set the font name to NAME (with modifiers and without spaces).")	
 	parser.add_argument("--familyname", 
 		dest="familyname",
 		metavar="FAM",
 		type=str,
 		default="Unknown",
-		help="The name of the font family")		
+		help="Set the font family name to FAM.")		
 	parser.add_argument("--fullname-as-filename",
 		action="store_true",
 		dest="fullnameasfilename",
 		default=False,
-		help="Use the fullname for the name of the output file")
+		help="Use the fullname for the name of the output file.")
 	parser.add_argument("--fontversion", 
 		dest="version",
 		metavar="VERS",
 		type=str,
 		default="001.001",
-		help="The version of the font (default: 001.001)")	
+		help="Set the version of the font to VERS. Default: 001.001")	
 	parser.add_argument("--copyright", 
 		dest="copyright",
 		metavar="COPY",
 		type=str,
 		default="",
-		help="The copyright notice of the font")		
+		help="Set the copyright notice of the font to COPY.")		
 	parser.add_argument("--vendor", 
 		dest="vendor",
 		metavar="VEND",
 		type=str,
 		default="",
-		help="The vendor of the font (limited to 4 characters)")	
+		help="Set the vendor name of the font to VEND (limited to 4 " \
+		"characters).")	
 	parser.add_argument("--weight", 
 		dest="weight",
 		metavar="WGT",
 		type=int,
 		default=None,
-		help="The OS/2 weight of the font (default: None)")		
+		help="Force the OS/2 weight of the font to be WGT. The " \
+		"weight number is mapped to the following PostScript weight "\
+		"names: 100=Thin, 200=Extra-Light, 300=Light, 400=Book, " \
+		"500=Medium, 600=Demi-Bold, 700=Bold, 800=Heavy, 900=Black")
 	parser.add_argument("--width", 
 		dest="width",
 		metavar="WDT",
 		type=int,
 		default=None,
-		help="The OS/2 width of the font (default: None)")
+		help="Force the OS/2 width of the font to be WDT. " \
+		"The width number stands for the following width names: " \
+		"1=Ultra-condensed, 2=Extra-condensed, 3=Condensed, " \
+		"4=Semi-condensed, 5=Medium (normal), 6=Semi-expanded, " \
+		"7=Expanded, 8=Extra-expanded, 9=Ultra-expanded")
 	parser.add_argument("--ffscript", 
 		dest="ffscript",
 		type=str,
 		default="",
-		help="Specify an own finetuning fontforge script (e.g. finetune.pe)")	
+		help="Specify an own finetuning fontforge script (e.g. " \
+		"finetune.pe). The script file has to be in the same " \
+		"directory as the source file. Example script: " \
+		"Open($1); SelectAll(); RemoveOverlap(); Generate($1); " \
+		"Quit(0);")	
 	args = parser.parse_args()
 	
 	# split args.formats string into proper list
