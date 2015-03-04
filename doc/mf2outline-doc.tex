@@ -2,12 +2,15 @@
 \documentclass{scrartcl}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc} 
-\usepackage{lmodern,fetamont,url,tikz,verbatim}
+\usepackage[bitstream-charter]{mathdesign}
+\usepackage{fetamont,url,tikz,verbatim,listings,inconsolata}
 \usetikzlibrary{positioning}
 \setkomafont{sectioning}{\rmfamily\bfseries\boldmath}
 \renewcommand{\descriptionlabel}[1]{\hspace{\labelsep}\texttt{#1}}
 \title{mf2outline}
 \author{Linus Romer}
+
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
 
 \begin{document}	
 %
@@ -168,6 +171,56 @@ The \texttt{mf2outline.mp} base extends the \texttt{mfplain.mp} base. Unlike \te
 
 There is a special version called \texttt{mf2outline-prev.mp} that causes \MP{} to use icosagon pens instead of circular/elliptic pens. The only difference to \texttt{mf2outline.mp} is the version number, that ends with the string \texttt{"prev"}.
 
+Example of a \texttt{mf2outline.txt} file:
+\begin{lstlisting}
+mf2outline: font_size 10
+mf2outline: font_slant 0
+mf2outline: font_normal_space 2.29996
+mf2outline: font_normal_shrink 0.80002
+mf2outline: font_x_height 4.34998
+mf2outline: font_quad 6.90002
+mf2outline: font_os_weight 400
+mf2outline: font_os_width 5
+mf2outline: font_identifier FQDR
+mf2outline: font_coding_scheme Unicode
+mf2outline: font_copyright Linus Romer, 2015
+mf2outline: font_name Quindesch-Regular10
+mf2outline: font_fullname Quindesch Regular 10
+mf2outline: font_familyname Quindesch
+mf2outline: kerningclassesl 
+0041 
+0056 0057 
+mf2outline: kerningclassesr 
+0041 
+0056 0057 
+mf2outline: kerningmatrix 
+0 -1.0994 
+-1.0994 0 
+mf2outline: gsubtable liga
+0066 0066 
+FB00 
+mf2outline: gsubtable smcp
+0068 
+E02A 
+mf2outline: gsubtable c2sc
+0041 
+E000 
+0048 
+E02A 
+mf2outline: eof
+\end{lstlisting}
+
+Snippet from a PostScript file containing special \texttt{mf2outline} information:\lstset{language=PostScript} 
+\begin{lstlisting}
+% mf2outline: charwd 7.28752
+% mf2outline: charht 6.49994
+% mf2outline: chardp 0
+% mf2outline: charic 0
+% mf2outline: charcode 79
+% mf2outline: charext 0
+% mf2outline: charunicode 004F
+\end{lstlisting}
+
 The new extensions and its necessary macros are described in the following subsections.
 %
 \subsection{Additional Font and Glyph Parameters}
@@ -216,8 +269,6 @@ The \texttt{mf2outline.mp} base defines some new parameters that cannot be store
 		\item charunicode (unicode string like "004A")
 	\end{itemize}
 \end{itemize}
-%
-Most of these parameters are written to the font information file \texttt{mf2outline.txt} and read by \texttt{mf2outline.py}.
 %
 \subsection{Unicode Support}
 %
