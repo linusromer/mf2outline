@@ -3,7 +3,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc} 
 \usepackage[bitstream-charter]{mathdesign}
-\usepackage{fetamont,url,tikz,verbatim,listings,inconsolata}
+\usepackage[english]{babel}
+\usepackage{fetamont,url,tikz,verbatim,listings,inconsolata,amsmath,microtype}
 \usetikzlibrary{positioning}
 \setkomafont{sectioning}{\rmfamily\bfseries\boldmath}
 \renewcommand{\descriptionlabel}[1]{\hspace{\labelsep}\texttt{#1}}
@@ -25,7 +26,7 @@
 	\item The \MF{} compiler can only produce bitmaps and cannot produce outline font formats like Type~1 or OpenType.
 	\item The \MF{} compiler cannot write more than 256 different characters per font.
 \end{itemize}
-Luckily, the \MP{} language and its compiler can be used as an expediant (see \cite{hobby13}). Together with the \verb|mfplain.mp| base, the \MP{} language supersets nearly 100~\% of the \MF{} language. The \MP{} compiler outputs PostScript files, which can be imported in FontForge and then be converted to outline font formats. This process is automated by the \verb|mf2outline.py| script. 
+Luckily, the \MP{} language and its compiler (see \cite{hobby13}) can be used as an expediant. Together with the \verb|mfplain.mp| base, the \MP{} language supersets nearly 100~\% of the \MF{} language. The \MP{} compiler outputs PostScript files, which can be imported in FontForge and then be converted to outline font formats. This process is automated by the \verb|mf2outline.py| script. 
 
 For compatiblity reasons, the \verb|mfplain.mp| base does not support more than 256 different characters per font. To get over this and other artificial restriction, the \verb|mf2outline.mp| base extends the capabilities of the \verb|mfplain.mp| base. Of course, the backwards compatibility to \MF{} will be lost by using these extensions.
 
@@ -167,11 +168,131 @@ Both programs, \verb|mftrace| and \verb|mf2pt1|, have deeply inspired the author
 %
 \section{The \texttt{mf2outline.mp} Base}
 %
-The \texttt{mf2outline.mp} base extends the \texttt{mfplain.mp} base. Unlike \texttt{mf2outline.mp} base, \texttt{mf2outline.mp} causes \MP{} to write special additional glyph information to the PostScript files and to generate an additional file mf2outline.txt, that contains general font information. Normally, some of these additional information are stored in the \texttt{tfm} file.
+\subsection{Unicode Support}
+%
+\MF{} can pack at most $2^{8}=256$ glyphs in a font. \MP{} can output nearly arbitrary many PostScript files (each containing one glyph). For compatibility reasons, \MP{} combined with \texttt{mfplain.mp} restricts the glyph code $c$ to be a byte (which is a number between $0$ to $255$):
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+def beginchar(expr c,w_sharp,h_sharp,d_sharp) =
+ begingroup
+ charcode:=if known c: byte c else: 0 fi;
+ charwd:=w_sharp;      charht:=h_sharp;       chardp:=d_sharp;
+ w:=charwd*pt; h:=charht*pt; d:=chardp*pt;
+ charic:=0; clearxy; clearit; clearpen; scantokens extra_beginchar;
+ enddef;
+\end{lstlisting}
+%
+Another restriction is common to both, \MF{} and \MP: Numbers are represented in fixed point arithmetic as integer multiples of $2^{-16}$ and can (normally) not be greater than $4096=2^{12}$. The Basic Multilingual Plane of Unicode contains $2^{16}=65\,536$ glyphs, enumerated in hexadecimal numbers from 0000 upto FFFF. In \texttt{mfplain}, these  hexadecimal unicode codes are represented by a string of length $4$ or two byte numbers called charcode and charext. Thus, the code of the letter «J» can be represented in the following variants:
+\[
+	\underbrace{74}_{\text{decimal}}\quad=\quad\underbrace{\text{"004A"}}_{\text{string}}\quad=\;\underbrace{\binom{0}{74}}_{\text{charext/charcode}}
+\]
+The \texttt{beginchar} macro in \texttt{mf2outline.mp} is redefined as follows:
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+newinternal string charunicode;
+def beginchar(expr c,w_sharp,h_sharp,d_sharp) =
+  begingroup
+    charunicode:=if known c: unicode c else: "0000" fi; 
+    charcode:=hex(substring(2,4) of charunicode); 
+    charext:=hex(substring(0,2) of charunicode); 
+    charwd:=w_sharp;      charht:=h_sharp;       chardp:=d_sharp;
+    w:=charwd*pt; h:=charht*pt; d:=chardp*pt;
+    charic:=0; clearxy; clearit; clearpen; scantokens extra_beginchar;
+enddef;
+\end{lstlisting}
+%
+There are two additional macros necessary:
+\begin{itemize}
+	\item \texttt{hexadecimal} converts a decimal number to a hexadecimal string, e.g. hexadecimal(74) =~"4A".
+	\item \texttt{unicode} converts a decimal number or a string to a hexadecimal string of length 4, e.g. unicode(74) =~unicode("J") =~unicode("004A") ~="004A".
+\end{itemize}
+%
+The \texttt{hexadecimal} macro is defined as follows:
+%
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+vardef hexadecimal primary n =
+ save m,s;
+ m:=abs round n; 
+ string s; 
+ s=
+ if (m mod 16)<10:
+  decimal(m mod 16)
+ elseif (m mod 16)=10:
+  "A"
+ elseif (m mod 16)=11:
+  "B"
+ elseif (m mod 16)=12:
+  "C"
+ elseif (m mod 16)=13:
+  "D"
+ elseif (m mod 16)=14:
+  "E"
+ else:
+  "F"
+ fi
+ ;
+ forever:
+  m:=m div 16; 
+  exitif m=0;
+  s:=
+  if (m mod 16)<10:
+   decimal(m mod 16)
+  elseif (m mod 16)=10:
+   "A"
+  elseif (m mod 16)=11:
+   "B"
+  elseif (m mod 16)=12:
+   "C"
+  elseif (m mod 16)=13:
+   "D"
+  elseif (m mod 16)=14:
+   "E"
+  else:
+   "F"
+  fi
+  & s; 
+ endfor
+ s
+enddef;
+\end{lstlisting}
+%
+The \texttt{unicode} macro is defined as follows:
+%
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+vardef unicode primary n = 
+ save s,z;
+ string s,z;
+ s:=
+ if string n:
+  if length(n)=1: % assume n to be a glyph name like "W"
+   hexadecimal(ASCII n);
+  else: % assume n to be a unicode like "004A" (or even "4A")
+   n;
+  fi
+ else: % assume n to be a numeric 
+  hexadecimal n;
+ fi 
+ % now fill zeroes to be a 4-digit word:
+ z:=
+ if length(s)<4:
+  for i=1 upto (4-length(s)): "0" & endfor s;
+ else:
+  s;
+ fi
+ z
+enddef;
+\end{lstlisting}
+%
+\subsection{Additional Font and Glyph Parameters}
+%
+Unlike \texttt{mfplain.mp}, the \texttt{mf2outline.mp} base forces \MP{} to write special additional glyph information to the PostScript files and to generate an additional file mf2outline.txt, that contains general font information. Normally, some of these additional information are stored in the \texttt{tfm} file.
 
 There is a special version called \texttt{mf2outline-prev.mp} that causes \MP{} to use icosagon pens instead of circular/elliptic pens. The only difference to \texttt{mf2outline.mp} is the version number, that ends with the string \texttt{"prev"}.
 
 Example of a \texttt{mf2outline.txt} file:
+\lstset{columns=fullflexible}
 \begin{lstlisting}
 mf2outline: font_size 10
 mf2outline: font_slant 0
@@ -210,7 +331,7 @@ E02A
 mf2outline: eof
 \end{lstlisting}
 
-Snippet from a PostScript file containing special \texttt{mf2outline} information:\lstset{language=PostScript} 
+Snippet from a PostScript file containing special \texttt{mf2outline} information:\lstset{language=PostScript,columns=fullflexible}
 \begin{lstlisting}
 % mf2outline: charwd 7.28752
 % mf2outline: charht 6.49994
@@ -220,10 +341,6 @@ Snippet from a PostScript file containing special \texttt{mf2outline} informatio
 % mf2outline: charext 0
 % mf2outline: charunicode 004F
 \end{lstlisting}
-
-The new extensions and its necessary macros are described in the following subsections.
-%
-\subsection{Additional Font and Glyph Parameters}
 %
 The \texttt{tfm} file stores amongst other things the following parameters:
 \begin{itemize}
@@ -270,17 +387,124 @@ The \texttt{mf2outline.mp} base defines some new parameters that cannot be store
 	\end{itemize}
 \end{itemize}
 %
-\subsection{Unicode Support}
+\subsection{Ligatures and other Glyph Substitutions}
 %
-
+The \texttt{addgsub} macro can be used to define many kind of glyph substitutions, e.g.:
+\begin{itemize}
+	\item addgsub("liga")("0066","0066")("FB00") will substitute f and f by ff as ligature
+	\item addgsub("smcp")("0068")("E02A") will substitute h by E02A as a small cap substitution
+\end{itemize}
+%
+All the glyph substitution data is stored in a 4-dimensional matrix \texttt{gsubtables\_[i][j][n][k]} with the following indices:
+\begin{itemize}
+	\item[i] number of gsubtable (e.g. 1 for "liga")
+	\item[j] number of current information in \texttt{gsubtables\_[i]}
+	\item[n] switch that is either 1 (first list of chars) or 2 (second list of chars)
+	\item[k] index inside the list of chars
+\end{itemize}
+%
+The detailed implementation of the \texttt{addgsub} macro is given here:
+%
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+def addgsub(expr table)(text first)(text second) = 
+ begingroup
+  save i,j,k;
+  numeric i,j,k; % indices for gsubtables_[i][j][n][k]
+  %--- store table information ---
+  if table="liga": % get index i
+   i=1;
+  elseif table="aalt":
+   i=2;
+  elseif table="swsh":
+   i=3; 
+  elseif table="hist":
+   i=4; 
+  elseif table="locl":
+   i=5; 
+  elseif table="rand":
+   i=6; 
+  elseif table="nalt":
+   i=7; 
+  elseif table="salt":
+   i=8; 
+  elseif table="subs":
+   i=9; 
+  elseif table="sups":
+   i=10; 
+  elseif table="titl":
+   i=11; 
+  elseif table="clig":
+   i=12; 
+  elseif table="dlig":
+   i=13; 
+  elseif table="hlig":
+   i=14; 
+  elseif table="smcp":
+   i=15; 
+  elseif table="c2sc":
+   i=16; 
+  elseif table="pcap":
+   i=17; 
+  elseif table="c2pc":
+   i=18; 
+  elseif table="unic":
+   i=19; 
+  elseif table="ital":
+   i=20; 
+  elseif table="ordn":
+   i=21; 
+  elseif table="lnum":
+   i=22; 
+  elseif table="onum":
+   i=23; 
+  elseif table="pnum":
+   i=24; 
+  elseif table="tnum":
+   i=25; 
+  elseif table="frac":
+   i=26; 
+  elseif table="afrc":
+   i=27; 
+  elseif table="dnom":
+   i=28; 
+  elseif table="numr":
+   i=29; 
+  elseif table="sinf":
+   i=30; 
+  elseif table="zero":
+   i=31; 
+  elseif table="mgrk":
+   i=32; 
+  elseif table="ss01":
+   i=33; 
+  else:
+   errmessage("The first argument of addgsub() cannot be mapped to a gsub table. I will ignore this.");
+  fi
+  j:=hex(gsubtables_[i][0][0][0])+1;
+  gsubtables_[i][0][0][0]:=hexadecimal j; % length of gsubtables_[i]
+  %--- store first chars ---
+  k:=0; % number of first chars in gsubtables_[i][j]
+  for a=first:
+   k:=k+1;
+   gsubtables_[i][j][1][k]:=unicode a;
+  endfor
+  % number of first chars is stored at 0th position
+  gsubtables_[i][j][1][0]:=hexadecimal k; 
+  %--- store second chars ---
+  k:=0; % number of second chars in gsubtables_[i][j]
+  for a=second:
+   k:=k+1;
+   gsubtables_[i][j][2][k]:=unicode a;
+  endfor
+  % number of second chars is stored at 0th position
+  gsubtables_[i][j][2][0]:=hexadecimal k; 
+ endgroup
+enddef;
+\end{lstlisting}
 %
 \subsection{Kerning}
-%
-\subsection{Ligatures}
-%
-\subsection{Other OpenType Features}
-%
-
+0th index is always used for lengths...
 %
 \begin{thebibliography}{Hobby13}
 	\bibitem[Hobby13]{hobby13}
