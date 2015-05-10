@@ -30,32 +30,6 @@ import shutil
 import argparse
 import math
 
-# integrateGsubtable() stores the gsub information of a matrix
-# into gsub lookups of a font
-# "font" has to be a font from python-fontforge
-# "matrix" is a 2d matrix where 2 following rows belong together
-# "name" is the short name of the lookup type (e.g. "smcp")
-# "longname" is the custom name of the lookup
-# "counter" is the number of the lookup
-def integrateGsubtable(font,matrix,name,longname,counter):
-	if len(matrix) > 0:
-		font.addLookup(" ".join((longname,"lookup",str(counter))),"gsub_single",
-		(),
-		((name,(("latn",("dflt")),)),))
-		font.addLookupSubtable(" ".join((longname,"lookup",str(counter))),
-		" ".join((longname,"lookup",str(counter),"subtable")))
-		for i in range(0,len(matrix)/2):
-			# note that matrix[2*i] and matrix[2*i+1] are kind of reversed
-			# in comparison to ligatures (strange fontforge convention)
-			codefirst = int(matrix[2*i][0],16) # used in this loop only
-			codesecond = int(matrix[2*i+1][0],16) # used in this loop only
-			font[codefirst].addPosSub(
-			" ".join((longname,"lookup",str(counter),"subtable")),
-			fontforge.nameFromUnicode(codesecond))
-		return counter + 1
-	else:
-		return counter
-	
 if __name__ == "__main__":			
 	parser = argparse.ArgumentParser(description="Generate outline fonts from Metafont sources.")
 	parser.add_argument("mfsource", help="The file name of the Metafont source file")
@@ -254,9 +228,9 @@ if __name__ == "__main__":
 	kerningclassesl = [] 
 	kerningclassesr = []
 	kerningmatrix = []
-	gsubtables = [[] for i in range(34)] # 0th list will not be used (avoiding confusion)
-	ligaturematrix = [] #obsolete
-	smallcaps = [] #obsolete
+	lookupnames = []
+	lookupdata = []
+	#gsubtables = [[] for i in range(34)] # 0th list will not be used (avoiding confusion)
 	with open(os.path.join(tempdir,"mf2outline.txt"), "r") as metricfile:
 		# the idea is to read through the file and store the relevant
 		# information in several lists. But these lists will be processed
@@ -305,79 +279,15 @@ if __name__ == "__main__":
 					elif words[1] == "kerningmatrix":
 						currentlistname = "kerningmatrix"
 						tfmisneeded = False
-					elif words[1] == "gsubtable":
-						currentlistname = "gsubtable"
-						if words[2] == "liga":
-							gsubnumber = 1
-							tfmisneeded = False
-						elif words[2] == "aalt":
-							gsubnumber = 2
-						elif words[2] == "swsh":
-							gsubnumber = 3
-						elif words[2] == "hist":
-							gsubnumber = 4 
-						elif words[2] == "locl":
-							gsubnumber = 5 
-						elif words[2] == "rand":
-							gsubnumber = 6 
-						elif words[2] == "nalt":
-							gsubnumber = 7 
-						elif words[2] == "salt":
-							gsubnumber = 8 
-						elif words[2] == "subs":
-							gsubnumber = 9 
-						elif words[2] == "sups":
-							gsubnumber = 10 
-						elif words[2] == "titl":
-							gsubnumber = 11 
-						elif words[2] == "clig":
-							gsubnumber = 12 
-						elif words[2] == "dlig":
-							gsubnumber = 13 
-						elif words[2] == "hlig":
-							gsubnumber = 14 
-						elif words[2] == "smcp":
-							gsubnumber = 15 
-						elif words[2] == "c2sc":
-							gsubnumber = 16 
-						elif words[2] == "pcap":
-							gsubnumber = 17 
-						elif words[2] == "c2pc":
-							gsubnumber = 18 
-						elif words[2] == "unic":
-							gsubnumber = 19 
-						elif words[2] == "ital":
-							gsubnumber = 20 
-						elif words[2] == "ordn":
-							gsubnumber = 21 
-						elif words[2] == "lnum":
-							gsubnumber = 22 
-						elif words[2] == "onum":
-							gsubnumber = 23 
-						elif words[2] == "pnum":
-							gsubnumber = 24 
-						elif words[2] == "tnum":
-							gsubnumber = 25 
-						elif words[2] == "frac":
-							gsubnumber = 26 
-						elif words[2] == "afrc":
-							gsubnumber = 27 
-						elif words[2] == "dnom":
-							gsubnumber = 28 
-						elif words[2] == "numr":
-							gsubnumber = 29 
-						elif words[2] == "sinf":
-							gsubnumber = 30 
-						elif words[2] == "zero":
-							gsubnumber = 31 
-						elif words[2] == "mgrk":
-							gsubnumber = 32 
-						elif words[2] == "ss01":
-							gsubnumber = 33 		
+					elif words[1] == "lookupnames":
+						currentlistname = "lookupnames"
+					elif words[1] == "lookupdata":
+						currentlistname = "lookupdata"
+						tfmisneeded = False
 			elif not currentlistname == "none": # if there is something to write to...
-				if currentlistname == "gsubtable":
-					gsubtables[gsubnumber].append(line.split())
-				else: 
+				if (currentlistname == "lookupnames") or (currentlistname == "lookupdata"):
+					vars()[currentlistname].append(line.rstrip('\n'))
+				else:
 					vars()[currentlistname].append(line.split())
 	
 	if args.verbose:
@@ -870,9 +780,6 @@ if __name__ == "__main__":
 				print "Reading kerning/ligature information from tfm..."
 			font.mergeFeature("%s/%s.tfm" % (tempdir, generalname))
 		else:
-			# setting the counters for gpos and gsub tables
-			gposcounter = 0
-			gsubcounter = 0
 			# integrate kerningclasses
 			if len(kerningclassesl)>0 and len(kerningclassesr)>0:
 				kerningclassesr[:0] = [["0"]] # this is the "Everything else" feature from fontforge
@@ -881,59 +788,23 @@ if __name__ == "__main__":
 				kerningmatrix = [round(float(i)*1000/args.designsize) for j in kerningmatrix for i in j] # flatten 2d matrix to 1d (and string to int)
 				kerningclassesl = [[fontforge.nameFromUnicode(int(j,16)) for j in i] for i in kerningclassesl]
 				kerningclassesr = [[fontforge.nameFromUnicode(int(j,16)) for j in i] for i in kerningclassesr]
-				font.addLookup("'kern' Horizontal Kerning in Latin lookup %s" % gposcounter,"gpos_pair",
+				font.addLookup("Horizontal Kerning in Latin",
+				"gpos_pair",
 				(),
 				(("kern",(("latn",("dflt")),)),))
-				font.addKerningClass("'kern' Horizontal Kerning in Latin lookup %s" % gposcounter,
-				"'kern' Horizontal Kerning in Latin lookup %s subtable" % gposcounter,
+				font.addKerningClass("Horizontal Kerning in Latin",
+				"Horizontal Kerning in Latin subtable",
 				kerningclassesl,
 				kerningclassesr,
 				kerningmatrix) # kerningmatrix float entries will be rounded
-				gposcounter += 1
-			# integrate ligatures
-			if len(gsubtables[1]) > 0:
-				font.addLookup("'liga' Standard Ligatures in Latin lookup %s" % gsubcounter,"gsub_ligature",(),
-				(("liga",(('DFLT', ('dflt',)),("latn",("dflt")),)),))
-				font.addLookupSubtable("'liga' Standard Ligatures in Latin lookup %s" % gsubcounter,
-				"'liga' Standard Ligatures in Latin lookup %s subtable" % gsubcounter)
-				for i in range(0,len(gsubtables[1])/2):
-					codefirst = int(gsubtables[1][2*i+1][0],16) # used in this loop only
-					font[codefirst].addPosSub("'liga' Standard Ligatures in Latin lookup %s subtable" % gsubcounter,
-					[fontforge.nameFromUnicode(int(j,16)) for j in gsubtables[1][2*i][:]])
-				gsubcounter += 1
-			# integrate the remaining gsub lookups
-			gsubcounter = integrateGsubtable(font,gsubtables[2],"aalt","'aalt' Access All Alternates",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[3],"swsh","Swash",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[4],"hist","Historical Forms",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[5],"locl","Localized Forms in Latin",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[6],"rand","Randomize",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[7],"nalt","Alternate Annotation Forms",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[8],"salt","Stylistic Alternatives",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[9],"subs","Subscript",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[10],"sups","Superscript",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[11],"titl","'titl' Titling Alternates",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[12],"clig","'clig' Contextual Ligatures",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[13],"dlig","'dlig' Discretionary Ligatures",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[14],"hlig","'hlig' Historical Ligatures",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[15],"smcp","'smcp' Lowercase to Small Capitals",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[16],"c2sc","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[17],"pcap","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[18],"c2pc","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[19],"unic","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[20],"ital","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[21],"ordn","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[22],"lnum","Lining Figures",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[23],"onum","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[24],"pnum","Proportional Numbers",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[25],"tnum","Tabular Numbers",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[26],"frac","Diagonal Fractions",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[27],"afrc","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[28],"dnom","Denominators",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[29],"numr","Numerators",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[30],"sinf","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[31],"zero","Slashed Zero",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[32],"mgrk","bla",gsubcounter)
-			gsubcounter = integrateGsubtable(font,gsubtables[33],"ss01","Style Set 1",gsubcounter)
+			# add PosSub lookups with subtables
+			if len(lookupnames)>0:
+				i = 0
+				while i < len(lookupnames):
+					font.addLookup(lookupnames[i+1],lookupnames[i+2],eval(lookupnames[i+3]),eval(lookupnames[i+4]))
+					for j in range(0,int(lookupnames[i])):
+						font.addLookupSubtable(lookupnames[i+1],lookupnames[i+5+j])
+					i += 5+int(lookupnames[i])
 	
 	if args.encoding == "t1":
 		if args.veryverbose:
