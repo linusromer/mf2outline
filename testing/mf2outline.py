@@ -701,7 +701,7 @@ if __name__ == "__main__":
 		font.encoding = "unicode"
 	
 	if args.verbose:
-		print "Setting the other generale font information..."
+		print "Setting the other general font information..."
 	font.fullname = args.fullname
 	font.fontname = args.fontname
 	font.familyname = args.familyname
@@ -805,6 +805,11 @@ if __name__ == "__main__":
 					for j in range(0,int(lookupnames[i])):
 						font.addLookupSubtable(lookupnames[i+1],lookupnames[i+5+j])
 					i += 5+int(lookupnames[i])
+			# read in lookup data
+			for i in range(0,len(lookupdata)/3):
+				font[int(lookupdata[3*i+1],16)].addPosSub(
+				lookupdata[3*i],
+				[fontforge.nameFromUnicode(int(j,16)) for j in lookupdata[3*i+2].split()])
 	
 	if args.encoding == "t1":
 		if args.veryverbose:
