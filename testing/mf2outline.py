@@ -289,7 +289,7 @@ if __name__ == "__main__":
 					vars()[currentlistname].append(line.rstrip('\n'))
 				else:
 					vars()[currentlistname].append(line.split())
-	
+
 	if args.verbose:
 		print "Setting the font encoding..."
 	if args.encoding == None:
@@ -807,10 +807,15 @@ if __name__ == "__main__":
 					i += 5+int(lookupnames[i])
 			# read in lookup data
 			for i in range(0,len(lookupdata)/3):
-				font[int(lookupdata[3*i+1],16)].addPosSub(
-				lookupdata[3*i],
-				[fontforge.nameFromUnicode(int(j,16)) for j in lookupdata[3*i+2].split()])
-	
+				if len(lookupdata[3*i+2].split()) > 1: # multiple substitution
+					font[int(lookupdata[3*i+1],16)].addPosSub(
+					lookupdata[3*i],
+					[fontforge.nameFromUnicode(int(j,16)) for j in lookupdata[3*i+2].split()])
+				else: # single substitution
+					font[int(lookupdata[3*i+1],16)].addPosSub(
+					lookupdata[3*i],
+					lookupdata[3*i+2])
+				
 	if args.encoding == "t1":
 		if args.veryverbose:
 			print "Adding the space character..."

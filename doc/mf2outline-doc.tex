@@ -288,8 +288,57 @@ enddef;
 \subsection{Additional Font and Glyph Parameters}
 %
 Unlike \texttt{mfplain.mp}, the \texttt{mf2outline.mp} base forces \MP{} to write special additional glyph information to the PostScript files and to generate an additional file mf2outline.txt, that contains general font information. Normally, some of these additional information are stored in the \texttt{tfm} file.
-
-There is a special version called \texttt{mf2outline-prev.mp} that causes \MP{} to use icosagon pens instead of circular/elliptic pens. The only difference to \texttt{mf2outline.mp} is the version number, that ends with the string \texttt{"prev"}.
+%
+\subsubsection{The Old Way --- TFM}
+%
+The \texttt{tfm} file stores amongst other things the following parameters:
+\begin{itemize}
+	\item Global font parameters:
+	\begin{itemize}
+		\item font\_size
+		\item font\_slant
+		\item font\_normal\_space
+		\item font\_normal\_stretch
+		\item font\_normal\_shrink
+		\item font\_x\_height
+		\item font\_quad
+		\item font\_extra\_space
+		\item font\_identifier (normally not stored)
+		\item font\_coding\_scheme (normally not stored)
+	\end{itemize}
+	\item Glyph parameters:
+	\begin{itemize}
+		\item charwd (character width)
+		\item charht (character height)
+		\item chardp (character depth)
+		\item charic (character italic correction)
+		\item charcode (code number of the character)
+		\item charext (code extension number of the character)
+		\item chardx (horizontal escapement of glyph positioning)
+		\item chardy (vertical escapement of glyph positioning)
+	\end{itemize}
+\end{itemize}
+%
+\subsubsection{The New Way --- \texttt{mf2outline.txt} \& PostScript Comments}
+%
+The \texttt{mf2outline.mp} base defines some new parameters that cannot be stored in the \texttt{tfm} format:
+\begin{itemize}
+	\item Global font parameters:
+	\begin{itemize}
+		\item font\_os\_weight
+		\item font\_os\_width
+		\item font\_version
+		\item font\_copyright
+		\item font\_name
+		\item font\_fullname
+		\item font\_familyname
+	\end{itemize}
+	\item Glyph parameters:
+	\begin{itemize}
+		\item charunicode (unicode string like "004A")
+	\end{itemize}
+\end{itemize}
+All the global font parameters are written to \texttt{mf2outline.txt}, whereas all glyph parameters are appended to the glyph PostScript files.
 
 Example of a \texttt{mf2outline.txt} file:
 \lstset{columns=fullflexible}
@@ -317,17 +366,17 @@ mf2outline: kerningclassesr
 mf2outline: kerningmatrix 
 0 -1.0994 
 -1.0994 0 
-mf2outline: gsubtable liga
+mf2outline: lookupnames 
+1
+Standard Ligatures
+gsub_ligature
+()
+(('liga',(('DFLT', ('dflt',)),('latn',('dflt')),)),)
+Standard Ligatures subtable
+mf2outline: lookupdata 
+Standard Ligatures subtable
+FB00
 0066 0066 
-FB00 
-mf2outline: gsubtable smcp
-0068 
-E02A 
-mf2outline: gsubtable c2sc
-0041 
-E000 
-0048 
-E02A 
 mf2outline: eof
 \end{lstlisting}
 
@@ -369,142 +418,42 @@ The \texttt{tfm} file stores amongst other things the following parameters:
 		\item chardy (vertical escapement of glyph positioning)
 	\end{itemize}
 \end{itemize}
-The \texttt{mf2outline.mp} base defines some new parameters that cannot be stored in the \texttt{tfm} format:
-\begin{itemize}
-	\item Global font parameters:
-	\begin{itemize}
-		\item font\_os\_weight
-		\item font\_os\_width
-		\item font\_version
-		\item font\_copyright
-		\item font\_name
-		\item font\_fullname
-		\item font\_familyname
-	\end{itemize}
-	\item Glyph parameters:
-	\begin{itemize}
-		\item charunicode (unicode string like "004A")
-	\end{itemize}
-\end{itemize}
-%
-\subsection{Ligatures and other Glyph Substitutions}
-%
-The \texttt{addgsub} macro can be used to define many kind of glyph substitutions, e.g.:
-\begin{itemize}
-	\item addgsub("liga")("0066","0066")("FB00") will substitute f and f by ff as ligature
-	\item addgsub("smcp")("0068")("E02A") will substitute h by E02A as a small cap substitution
-\end{itemize}
-%
-All the glyph substitution data is stored in a 4-dimensional matrix \texttt{gsubtables\_[i][j][n][k]} with the following indices:
-\begin{itemize}
-	\item[i] number of gsubtable (e.g. 1 for "liga")
-	\item[j] number of current information in \texttt{gsubtables\_[i]}
-	\item[n] switch that is either 1 (first list of chars) or 2 (second list of chars)
-	\item[k] index inside the list of chars
-\end{itemize}
-%
-The detailed implementation of the \texttt{addgsub} macro is given here:
-%
-\lstset{language=MetaPost,columns=fullflexible}
-\begin{lstlisting}
-def addgsub(expr table)(text first)(text second) = 
- begingroup
-  save i,j,k;
-  numeric i,j,k; % indices for gsubtables_[i][j][n][k]
-  %--- store table information ---
-  if table="liga": % get index i
-   i=1;
-  elseif table="aalt":
-   i=2;
-  elseif table="swsh":
-   i=3; 
-  elseif table="hist":
-   i=4; 
-  elseif table="locl":
-   i=5; 
-  elseif table="rand":
-   i=6; 
-  elseif table="nalt":
-   i=7; 
-  elseif table="salt":
-   i=8; 
-  elseif table="subs":
-   i=9; 
-  elseif table="sups":
-   i=10; 
-  elseif table="titl":
-   i=11; 
-  elseif table="clig":
-   i=12; 
-  elseif table="dlig":
-   i=13; 
-  elseif table="hlig":
-   i=14; 
-  elseif table="smcp":
-   i=15; 
-  elseif table="c2sc":
-   i=16; 
-  elseif table="pcap":
-   i=17; 
-  elseif table="c2pc":
-   i=18; 
-  elseif table="unic":
-   i=19; 
-  elseif table="ital":
-   i=20; 
-  elseif table="ordn":
-   i=21; 
-  elseif table="lnum":
-   i=22; 
-  elseif table="onum":
-   i=23; 
-  elseif table="pnum":
-   i=24; 
-  elseif table="tnum":
-   i=25; 
-  elseif table="frac":
-   i=26; 
-  elseif table="afrc":
-   i=27; 
-  elseif table="dnom":
-   i=28; 
-  elseif table="numr":
-   i=29; 
-  elseif table="sinf":
-   i=30; 
-  elseif table="zero":
-   i=31; 
-  elseif table="mgrk":
-   i=32; 
-  elseif table="ss01":
-   i=33; 
-  else:
-   errmessage("The first argument of addgsub() cannot be mapped to a gsub table. I will ignore this.");
-  fi
-  j:=hex(gsubtables_[i][0][0][0])+1;
-  gsubtables_[i][0][0][0]:=hexadecimal j; % length of gsubtables_[i]
-  %--- store first chars ---
-  k:=0; % number of first chars in gsubtables_[i][j]
-  for a=first:
-   k:=k+1;
-   gsubtables_[i][j][1][k]:=unicode a;
-  endfor
-  % number of first chars is stored at 0th position
-  gsubtables_[i][j][1][0]:=hexadecimal k; 
-  %--- store second chars ---
-  k:=0; % number of second chars in gsubtables_[i][j]
-  for a=second:
-   k:=k+1;
-   gsubtables_[i][j][2][k]:=unicode a;
-  endfor
-  % number of second chars is stored at 0th position
-  gsubtables_[i][j][2][0]:=hexadecimal k; 
- endgroup
-enddef;
-\end{lstlisting}
 %
 \subsection{Kerning}
-0th index is always used for lengths...
+%
+If one want to kern the pair «AV» in \MF{} one needs an instruction like
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+ligtable "A": "V" kern -u#;
+\end{lstlisting}
+However, \texttt{ligtable} cannot handle unicode characters nor kerning classes.
+
+The \texttt{mf2outline} solution can handle unicode characters and uses kerning classes. 
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+addkernclassl("0041"); % A
+addkernclassl("0056","0057"); % V
+\end{lstlisting}
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+addkernclassr("0041"); % A
+addkernclassr("0056","0057"); % V
+\end{lstlisting}
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+addclasskern("0041","0056",-u#); 
+addclasskern("0056","0041",-u#);
+\end{lstlisting}
+%
+\subsection{Position \& Substitution Data}
+%
+Except for kerning, positioning and substitution data can be defined by the \texttt{addPosSub} macro.
+\lstset{language=MetaPost,columns=fullflexible}
+\begin{lstlisting}
+addLookup("Standard Ligatures","gsub_ligature","()","(('liga',(('DFLT', ('dflt',)),('latn',('dflt')),)),)");
+addLookupSubtable("Standard Ligatures","Standard Ligatures subtable");
+addPosSub("Standard Ligatures subtable")("FB00")("0066","0066")
+\end{lstlisting}
 %
 \begin{thebibliography}{Hobby13}
 	\bibitem[Hobby13]{hobby13}

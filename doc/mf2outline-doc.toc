@@ -8,6 +8,8 @@
 \contentsline {subsection}{\numberline {2.5}Other Tools}{5}
 \contentsline {section}{\numberline {3}The \texttt {mf2outline.mp} Base}{5}
 \contentsline {subsection}{\numberline {3.1}Unicode Support}{5}
-\contentsline {subsection}{\numberline {3.2}Additional Font and Glyph Parameters}{7}
-\contentsline {subsection}{\numberline {3.3}Ligatures and other Glyph Substitutions}{10}
-\contentsline {subsection}{\numberline {3.4}Kerning}{12}
+\contentsline {subsection}{\numberline {3.2}Additional Font and Glyph Parameters}{8}
+\contentsline {subsubsection}{\numberline {3.2.1}The Old Way --- TFM}{8}
+\contentsline {subsubsection}{\numberline {3.2.2}The New Way --- \texttt {mf2outline.txt} \& PostScript Comments}{8}
+\contentsline {subsection}{\numberline {3.3}Kerning}{10}
+\contentsline {subsection}{\numberline {3.4}Position \& Substitution Data}{11}
