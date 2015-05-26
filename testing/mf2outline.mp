@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20150306";
+string base_name, base_version; base_name="mf2outline"; base_version="20150520";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -518,25 +518,6 @@ vardef proofrulethickness expr x =
 message " macros for character and font administration,";
 
 % ----- start of modifications by Linus Romer -----
-% now redefine "beginchar" to allow charcodes larger than 255
-% and print relevant glyph/font information to the postscript file
-% there are 7 font dimensions that will be stored to "mpost.info":
-% - font_size (designsize)
-% - font_slant
-% - font_normal_space
-% - font_normal_stretch
-% - font_normal_shrink
-% - font_x_height
-% - font_quad
-% - font_extra_space
-% there are other font information that will be stored to "mpost.info":
-% - kerningclasses, kernings and ligatures
-% there are 5 charachter dimensions that will be stored to each character:
-% - charwd
-% - charht
-% - chardp
-% - charic
-% - charext
 
 % replace circle pens by icosagon pens for faster import in fontforge
 % (only in preview mode)
@@ -829,7 +810,7 @@ def font_fullname expr x = font_fullname_:=x enddef;
 def font_familyname expr x = font_familyname_:=x enddef;
 string font_identifier_, font_coding_scheme_, 
  font_name_, font_fullname_, font_familyname_,
- font_copyright_;
+ font_copyright_, font_version_;
 font_identifier_=font_coding_scheme_="UNSPECIFIED";
 % ----- end of some modifications by Linus Romer -----
 
@@ -874,7 +855,8 @@ def end =
   fi
  endfor
  for fvar = "font_identifier", "font_coding_scheme", "font_version",
-  "font_copyright", "font_name", "font_fullname", "font_familyname":
+  "font_copyright", "font_version", "font_name", "font_fullname", 
+  "font_familyname":
    if known scantokens (fvar & "_"):
     "mf2outline: " & fvar & " " & scantokens (fvar & "_") & char 10 &
    fi

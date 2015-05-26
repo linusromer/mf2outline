@@ -51,6 +51,7 @@ The following programs have to be installed before using \verb|mf2outline|:
 	\item Python interpreter (\verb|mf2outline.py| is a Python script)
 	\item \MP{} compiler
 	\item FontForge's python extension (\verb|python-fontforge|)
+	\item (minimal) \LaTeX{} (for pdf proofs only)
 \end{itemize}
 %
 \subsection{Usage and Command-line Options}
@@ -78,8 +79,9 @@ You may add some of these optional arguments:
 		Generate only the most important letters, use icosagon pens instead of circle/elliptic pens and do not care about advanced font features like kerning and ligatures (mainly used for \textffm{METAFLOP}).\\
 		List of letters: ! \& ( ) , - . / 0 1 2 3 4 5 6 7 8 9 ? A B C D E F G H I J K L M N O P Q R S T U V W X Y Z a b c d e f g h i j k l m n o p q r s t u v w x y z 
 	\item[-f FORMATS, -{}-formats FORMATS] \hfill \\
-		Generate outline fonts in the formats FORMATS (comma separated list).\\
-		Supported formats: sfd, afm, pfa, pfb, otf, ttf, eoff, svg, tfm\\
+		Generate the formats FORMATS (comma separated list).\\
+		Supported formats: sfd, afm, pfa, pfb, otf, ttf, eoff, 
+		svg, tfm, pdf (proof).\\
 		Default: otf
 	\item[-{}-encoding ENC ] \hfill \\
 		Force the font encoding to be ENC.\\
@@ -165,6 +167,127 @@ The following two programs are alternatives to \verb|mf2outline|.
 \end{description}
 %
 Both programs, \verb|mftrace| and \verb|mf2pt1|, have deeply inspired the author of \verb|mf2outline|. Thus, many ideas of the two programs can be found in \verb|mf2outline|, too.
+%
+\section{Example Use Of \texttt{mf2outline} Extensions}
+%
+The following example will show an example \MF{} file, that uses the \texttt{mf2outline} extensions. Remember: The backwards compatibility to the \MF{} compiler to these extensions is not given! 
+\lstset{columns=fullflexible}
+\begin{lstlisting}
+font_familyname "Quindesch";
+font_name "Quindesch-Regular10";
+font_fullname "Quindesch Regular 10";
+font_identifier "FQDR";
+font_copyright "Linus Romer, 2015";
+font_version "1.000";
+font_coding_scheme "Unicode";
+font_size 10pt#;                     % the "design size" of this font 
+font_slant 0;                        % general slanting of the font   
+font_normal_space .23designsize;
+font_normal_stretch .12designsize;
+font_normal_shrink .08designsize;
+font_x_height .435designsize;
+font_quad .69designsize;
+font_normal_shrink .08designsize;
+font_os_weight 400;                  % weight 400 means regular, 700 means bold
+font_os_width 5;                     % width 5 means regular, 3 means condensed
+% ... (definitions of font variables and glyphs) ...
+addkernclassl("0041"); % A
+addkernclassl("0056","0057"); % V
+
+addkernclassr("0041"); % A
+addkernclassr("0056","0057"); % V
+
+addclasskern("0041","0056",-110u_cap#); 
+addclasskern("0056","0041",-110u_cap#); 
+
+addLookup("Standard Ligatures","gsub_ligature","()","(('liga',(('latn',('dflt')),)),)");
+addLookupSubtable("Standard Ligatures","Standard Ligatures subtable");
+addPosSub("Standard Ligatures subtable")("FB00")("0066","0066") % ff
+addPosSub("Standard Ligatures subtable")("FB04")("0066","0066","006C") % ffl
+
+addLookup("Small Capitals","gsub_single","()","(('smcp',(('latn',('dflt')),)),)");
+addLookupSubtable("Small Capitals","Small Capitals subtable");
+addPosSub("Small Capitals subtable")("0068")("E02A") % h
+
+addLookup("Capitals to Small Capitals","gsub_single","()",
+"(('c2sc',(('latn',('dflt')),)),)");
+addLookupSubtable("Capitals to Small Capitals","Capitals to Small Capitals subtable");
+addPosSub("Capitals to Small Capitals subtable")("0048")("E02A") % H
+\end{lstlisting}
+%
+This will produce a temporary \texttt{mf2outline.txt} file:
+\lstset{columns=fullflexible}
+\begin{lstlisting}
+mf2outline: font_size 10
+mf2outline: font_slant 0
+mf2outline: font_normal_space 2.29996
+mf2outline: font_normal_shrink 0.80002
+mf2outline: font_x_height 4.34998
+mf2outline: font_quad 6.90002
+mf2outline: font_os_weight 400
+mf2outline: font_os_width 5
+mf2outline: font_identifier FQDR
+mf2outline: font_coding_scheme Unicode
+mf2outline: font_version 1.000
+mf2outline: font_copyright Linus Romer, 2015
+mf2outline: font_version 1.000
+mf2outline: font_name Quindesch-Regular10
+mf2outline: font_fullname Quindesch Regular 10
+mf2outline: font_familyname Quindesch
+mf2outline: kerningclassesl 
+0041 
+0056 0057 
+mf2outline: kerningclassesr 
+0041 
+0056 0057 
+mf2outline: kerningmatrix 
+0 -1.0994 
+-1.0994 0 
+mf2outline: lookupnames 
+1
+Standard Ligatures
+gsub_ligature
+()
+(('liga',(('latn',('dflt')),)),)
+Standard Ligatures subtable
+1
+Small Capitals
+gsub_single
+()
+(('smcp',(('latn',('dflt')),)),)
+Small Capitals subtable
+1
+Capitals to Small Capitals
+gsub_single
+()
+(('c2sc',(('latn',('dflt')),)),)
+Capitals to Small Capitals subtable
+mf2outline: lookupdata 
+Standard Ligatures subtable
+FB00
+0066 0066 
+Standard Ligatures subtable
+FB04
+0066 0066 006C 
+Small Capitals subtable
+0068
+E02A 
+Capitals to Small Capitals subtable
+0048
+E02A 
+mf2outline: eof
+\end{lstlisting}
+%
+Snippet from a PostScript file containing special \texttt{mf2outline} information:\lstset{language=PostScript,columns=fullflexible}
+\begin{lstlisting}
+% mf2outline: charwd 7.28752
+% mf2outline: charht 6.49994
+% mf2outline: chardp 0
+% mf2outline: charic 0
+% mf2outline: charcode 79
+% mf2outline: charext 0
+% mf2outline: charunicode 004F
+\end{lstlisting}
 %
 \section{The \texttt{mf2outline.mp} Base}
 %
@@ -335,87 +458,7 @@ The \texttt{mf2outline.mp} base defines some new parameters that cannot be store
 	\end{itemize}
 	\item Glyph parameters:
 	\begin{itemize}
-		\item charunicode (unicode string like "004A")
-	\end{itemize}
-\end{itemize}
-All the global font parameters are written to \texttt{mf2outline.txt}, whereas all glyph parameters are appended to the glyph PostScript files.
-
-Example of a \texttt{mf2outline.txt} file:
-\lstset{columns=fullflexible}
-\begin{lstlisting}
-mf2outline: font_size 10
-mf2outline: font_slant 0
-mf2outline: font_normal_space 2.29996
-mf2outline: font_normal_shrink 0.80002
-mf2outline: font_x_height 4.34998
-mf2outline: font_quad 6.90002
-mf2outline: font_os_weight 400
-mf2outline: font_os_width 5
-mf2outline: font_identifier FQDR
-mf2outline: font_coding_scheme Unicode
-mf2outline: font_copyright Linus Romer, 2015
-mf2outline: font_name Quindesch-Regular10
-mf2outline: font_fullname Quindesch Regular 10
-mf2outline: font_familyname Quindesch
-mf2outline: kerningclassesl 
-0041 
-0056 0057 
-mf2outline: kerningclassesr 
-0041 
-0056 0057 
-mf2outline: kerningmatrix 
-0 -1.0994 
--1.0994 0 
-mf2outline: lookupnames 
-1
-Standard Ligatures
-gsub_ligature
-()
-(('liga',(('DFLT', ('dflt',)),('latn',('dflt')),)),)
-Standard Ligatures subtable
-mf2outline: lookupdata 
-Standard Ligatures subtable
-FB00
-0066 0066 
-mf2outline: eof
-\end{lstlisting}
-
-Snippet from a PostScript file containing special \texttt{mf2outline} information:\lstset{language=PostScript,columns=fullflexible}
-\begin{lstlisting}
-% mf2outline: charwd 7.28752
-% mf2outline: charht 6.49994
-% mf2outline: chardp 0
-% mf2outline: charic 0
-% mf2outline: charcode 79
-% mf2outline: charext 0
-% mf2outline: charunicode 004F
-\end{lstlisting}
-%
-The \texttt{tfm} file stores amongst other things the following parameters:
-\begin{itemize}
-	\item Global font parameters:
-	\begin{itemize}
-		\item font\_size
-		\item font\_slant
-		\item font\_normal\_space
-		\item font\_normal\_stretch
-		\item font\_normal\_shrink
-		\item font\_x\_height
-		\item font\_quad
-		\item font\_extra\_space
-		\item font\_identifier (normally not stored)
-		\item font\_coding\_scheme (normally not stored)
-	\end{itemize}
-	\item Glyph parameters:
-	\begin{itemize}
-		\item charwd (character width)
-		\item charht (character height)
-		\item chardp (character depth)
-		\item charic (character italic correction)
-		\item charcode (code number of the character)
-		\item charext (code extension number of the character)
-		\item chardx (horizontal escapement of glyph positioning)
-		\item chardy (vertical escapement of glyph positioning)
+		\item charunicode (unicode string like \verb|"004A"|)
 	\end{itemize}
 \end{itemize}
 %
@@ -426,40 +469,25 @@ If one want to kern the pair «AV» in \MF{} one needs an instruction like
 \begin{lstlisting}
 ligtable "A": "V" kern -u#;
 \end{lstlisting}
-However, \texttt{ligtable} cannot handle unicode characters nor kerning classes.
-
-The \texttt{mf2outline} solution can handle unicode characters and uses kerning classes. 
-\lstset{language=MetaPost,columns=fullflexible}
-\begin{lstlisting}
-addkernclassl("0041"); % A
-addkernclassl("0056","0057"); % V
-\end{lstlisting}
-\lstset{language=MetaPost,columns=fullflexible}
-\begin{lstlisting}
-addkernclassr("0041"); % A
-addkernclassr("0056","0057"); % V
-\end{lstlisting}
-\lstset{language=MetaPost,columns=fullflexible}
-\begin{lstlisting}
-addclasskern("0041","0056",-u#); 
-addclasskern("0056","0041",-u#);
-\end{lstlisting}
+However, \texttt{ligtable} cannot handle unicode characters nor kerning classes. The \texttt{mf2outline} solution can handle unicode characters and uses kerning classes. Firstly, one has to define the kerning classes (\verb|addkernclassl| for letters that share the same shape to the right, \verb|addkernclassr| for letters that share the same shape to the left). Kerning values can then be added by \verb|addclasskern|.
 %
 \subsection{Position \& Substitution Data}
 %
-Except for kerning, positioning and substitution data can be defined by the \texttt{addPosSub} macro.
-\lstset{language=MetaPost,columns=fullflexible}
-\begin{lstlisting}
-addLookup("Standard Ligatures","gsub_ligature","()","(('liga',(('DFLT', ('dflt',)),('latn',('dflt')),)),)");
-addLookupSubtable("Standard Ligatures","Standard Ligatures subtable");
-addPosSub("Standard Ligatures subtable")("FB00")("0066","0066")
-\end{lstlisting}
+Except for kerning, positioning and substitution data can be defined by the macros \texttt{addPosSub}, \texttt{addLookup} and \texttt{addLookupSubtable}. These macros work like their corresponding python functions of python-fontforge described in \cite{williams15}.
 %
-\begin{thebibliography}{Hobby13}
+\subsection{Writing Temporary Text Files}
+%
+All the global font parameters, kerning, position and substitution data are written to \texttt{mf2outline.txt}, whereas all glyph parameters are appended to the glyph PostScript files.
+%
+\begin{thebibliography}{Williams15}
+	\bibitem[Williams15]{williams15}
+	George Williams
+	\emph{Writing python scripts to change fonts in FontForge}.
+	\url{fontforge.github.io/python.html}, 2015
 	\bibitem[Hobby13]{hobby13}
 	John D. Hobby et al.
 	\emph{\MP{} -- A User's Manual}.
 	\url{www.tug.org/docs/metapost/mpman.pdf}, 2013
 \end{thebibliography}
-%
+
 \end{document}

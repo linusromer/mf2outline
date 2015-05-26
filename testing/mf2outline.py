@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20150302
+#mf2outline version 20150519
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -66,9 +66,9 @@ if __name__ == "__main__":
 		action="append",
 		dest="formats",
 		default=[],
-		help="Generate outline fonts in the formats FORMATS (comma" \
+		help="Generate the formats FORMATS (comma " \
 		"separated list). Supported formats: sfd, afm, pfa, pfb, " \
-		"otf, ttf, eoff, svg, tfm. Default: otf")
+		"otf, ttf, eoff, svg, tfm, pdf (proof). Default: otf")
 	parser.add_argument("--encoding", 
 		dest="encoding",
 		metavar="ENC",
@@ -702,12 +702,18 @@ if __name__ == "__main__":
 	
 	if args.verbose:
 		print "Setting the other general font information..."
-	font.fullname = args.fullname
-	font.fontname = args.fontname
-	font.familyname = args.familyname
-	font.version = args.version
-	font.copyright = args.copyright
-	font.os2_vendor = args.vendor
+	if font.fullname == "Unknown":
+		font.fullname = args.fullname
+	if font.fontname == "Unknown":
+		font.fontname = args.fontname
+	if font.familyname == "Unknown":
+		font.familyname = args.familyname
+	if font.version == "001.001":
+		font.version = args.version
+	if font.copyright == "":
+		font.copyright = args.copyright
+	if font.os2_vendor == "":
+		font.os2_vendor = args.vendor
 	# setting the weight
 	if args.weight == None:
 		font.os2_weight = font_os2_weight
@@ -737,6 +743,8 @@ if __name__ == "__main__":
 		font.os2_weight = font_os2_width
 	else:
 		font.os2_weight = args.width
+	# setting the font comment
+	font.comment = "Created with mf2outline."
 
 	if args.verbose:
 		print "Importing glyphs and adding glyph metrics..."
@@ -814,7 +822,7 @@ if __name__ == "__main__":
 				else: # single substitution
 					font[int(lookupdata[3*i+1],16)].addPosSub(
 					lookupdata[3*i],
-					lookupdata[3*i+2])
+					fontforge.nameFromUnicode(int(lookupdata[3*i+2],16)))
 				
 	if args.encoding == "t1":
 		if args.veryverbose:
@@ -892,6 +900,66 @@ if __name__ == "__main__":
 	for outlineformat in args.formats:
 		if outlineformat == "sfd":
 			font.save("%s.%s" % (outputname,outlineformat))
+		elif outlineformat == "pdf":
+			subprocess.call( # run mpost in proof mode
+			['mpost',
+			'&%s/mf2outline' % os.path.split(os.path.abspath(sys.argv[0]))[0],
+			'\mode:=proof;',
+			'nonstopmode;',
+			'outputtemplate:=\"%{charunicode}.mps\";',
+			'input %s;' % mffile,
+			'bye'],
+			stdout = subprocess.PIPE, 
+			stderr = subprocess.PIPE,
+			cwd = tempdir
+			)
+			# write tex-file for proof images
+			with open(os.path.join(tempdir, "%s.tex" % outputname), "w") as texfile:
+				texfile.write("\documentclass{article}\n")
+				texfile.write("\usepackage{graphicx}\n")
+				texfile.write("\usepackage[left=1cm,right=1cm,bottom=1cm]{geometry}\n")
+				texfile.write("\pagestyle{empty}\n")
+				texfile.write("\\begin{document}\n")
+				texfile.write("\\begin{center}\n")
+				texfile.write("\mbox{}\n\n\\vspace{3cm}\n{\Huge\\textbf{%s}}\\\\[3ex]\n" % outputname)
+				texfile.write("\\today\\\\\n")
+				texfile.write("\\vspace{2cm}\n")
+				texfile.write("\\begin{tabular}{|l|c|}\hline\n")
+				texfile.write("font name & %s\\\\\hline\n" % font.fontname)
+				texfile.write("full name & %s\\\\\hline\n" % font.fullname)
+				texfile.write("family name & %s\\\\\hline\n" % font.familyname)
+				texfile.write("design size & %s\\\\\hline\n" % font.design_size)
+				texfile.write("italic angle & %s\\\\\hline\n" % font.italicangle)
+				texfile.write("\end{tabular}\\newpage\n")
+				mpslist = sorted(glob.glob(os.path.join(tempdir, "*.mps")),
+				key=lambda name: int(os.path.splitext(os.path.basename(name))[0],16))
+				for i in mpslist:
+					code = int(os.path.splitext(os.path.basename(i))[0],16)
+					texfile.write("\\begin{tabular}{|l|c|}\hline\n")
+					texfile.write("glyph name & %s\\\\\hline\n" % font[code].glyphname)
+					texfile.write("code (hexadecimal) & %s\\\\\hline\n" % os.path.splitext(os.path.basename(i))[0])
+					texfile.write("code (decimal) & %s\\\\\hline\n" % code)
+					texfile.write("width (pt/1000) & %s\\\\\hline\n" % font[code].width)
+					texfile.write("height (pt/1000) & %s\\\\\hline\n" % font[code].texheight)
+					texfile.write("depth (pt/1000) & %s\\\\\hline\n" % font[code].texdepth)
+					texfile.write("italic correction (pt/1000) & %s\\\\\hline\n" % font[code].italicCorrection)
+					texfile.write("\end{tabular}\\\\[3ex]\n")
+					texfile.write("\includegraphics{%s}\\newpage\n" % i)
+				texfile.write("\end{center}\n")
+				texfile.write("\end{document}\n")
+			subprocess.call(
+			['latex',"%s.tex" % outputname],
+			stdout = subprocess.PIPE, 
+			stderr = subprocess.PIPE,
+			cwd = tempdir
+			)
+			subprocess.call(
+			['dvipdfmx',"%s.dvi" % outputname],
+			stdout = subprocess.PIPE, 
+			stderr = subprocess.PIPE,
+			cwd = tempdir
+			)
+			shutil.copyfile("%s/%s.pdf" % (tempdir, outputname), "%s.pdf" % outputname) 
 		else:
 			font.generate("%s.%s" % (outputname,outlineformat))
 	
