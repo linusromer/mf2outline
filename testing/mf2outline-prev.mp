@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20150302prev";
+string base_name, base_version; base_name="mf2outline"; base_version="20150531prev";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -518,25 +518,6 @@ vardef proofrulethickness expr x =
 message " macros for character and font administration,";
 
 % ----- start of modifications by Linus Romer -----
-% now redefine "beginchar" to allow charcodes larger than 255
-% and print relevant glyph/font information to the postscript file
-% there are 7 font dimensions that will be stored to "mpost.info":
-% - font_size (designsize)
-% - font_slant
-% - font_normal_space
-% - font_normal_stretch
-% - font_normal_shrink
-% - font_x_height
-% - font_quad
-% - font_extra_space
-% there are other font information that will be stored to "mpost.info":
-% - kerningclasses, kernings and ligatures
-% there are 5 charachter dimensions that will be stored to each character:
-% - charwd
-% - charht
-% - chardp
-% - charic
-% - charext
 
 % replace circle pens by icosagon pens for faster import in fontforge
 % (only in preview mode)
@@ -651,15 +632,15 @@ def endchar =
 enddef;
 
 % kernings and ligatures
-string kernclassesl_[][], % list of left kerning classes (2d ragged)
- kernclassesr_[][], % list of right kerning classes (2d ragged)
- gsubtables_[][][][]; % list of the most relevant gsub tables (string for unicode support)
+string kernclassesl_[][], % list of left kerning classes
+ kernclassesr_[][], % list of right kerning classes
+ lookupnames_[][], % names of the lookups (including subtable names)
+ lookupdata_[][]; % data of the lookups
 numeric kernmatrix_[][]; % matrix with kerning entries
 kernclassesl_[0][0]="0"; % number of kernclassesl (will be increased)
 kernclassesr_[0][0]="0"; % number of kernclassesr (will be increased)
-for i=1 upto 33:
- gsubtables_[i][0][0][0]:="0"; % every gsub table starts empty
-endfor
+lookupnames_[0][0]="0"; % number of lookup names (will be increased)
+lookupdata_[0][0]="0"; % number of lookup names (will be increased)
 
 % add a left kerning class to kernclassesl
 % a is a comma separated list of codes, like addkernclassl(86,87,"c","004A");
@@ -727,106 +708,64 @@ def addclasskern(expr left,right,kvalue) =
  endgroup
 enddef;
 
-% add a gsub information, examples:
-% addgsub("liga")("FB04")("0066","0066") % ff substitutes f and f
-% addgsub("smcp")("E000")("0041") % E000 is a small cap of A
-% the main array gsubtables_[i][j][n][k] is structured with indices
-% i = number of gsubtable (e.g. 1 for "liag")
-% j = number of current information in gsubtables_[i]
-% n = 1 (first list of chars) or 2 (second list of chars)
-% k = number in the list of chars
-def addgsub(expr table)(text first)(text second) = 
+% similar to addLookup() from python-fontforge
+% name, type, flags and feature are strings
+def addLookup(expr name,type,flags,feature) = 
  begingroup
-  save i,j,k;
-  numeric i,j,k; % indices for gsubtables_[i][j][n][k]
-  %--- store table information ---
-  if table="liga": % get index i
-   i=1;
-  elseif table="aalt":
-   i=2;
-  elseif table="swsh":
-   i=3; 
-  elseif table="hist":
-   i=4; 
-  elseif table="locl":
-   i=5; 
-  elseif table="rand":
-   i=6; 
-  elseif table="nalt":
-   i=7; 
-  elseif table="salt":
-   i=8; 
-  elseif table="subs":
-   i=9; 
-  elseif table="sups":
-   i=10; 
-  elseif table="titl":
-   i=11; 
-  elseif table="clig":
-   i=12; 
-  elseif table="dlig":
-   i=13; 
-  elseif table="hlig":
-   i=14; 
-  elseif table="smcp":
-   i=15; 
-  elseif table="c2sc":
-   i=16; 
-  elseif table="pcap":
-   i=17; 
-  elseif table="c2pc":
-   i=18; 
-  elseif table="unic":
-   i=19; 
-  elseif table="ital":
-   i=20; 
-  elseif table="ordn":
-   i=21; 
-  elseif table="lnum":
-   i=22; 
-  elseif table="onum":
-   i=23; 
-  elseif table="pnum":
-   i=24; 
-  elseif table="tnum":
-   i=25; 
-  elseif table="frac":
-   i=26; 
-  elseif table="afrc":
-   i=27; 
-  elseif table="dnom":
-   i=28; 
-  elseif table="numr":
-   i=29; 
-  elseif table="sinf":
-   i=30; 
-  elseif table="zero":
-   i=31; 
-  elseif table="mgrk":
-   i=32; 
-  elseif table="ss01":
-   i=33; 
-  else:
-   errmessage("The first argument of addgsub() cannot be mapped to a gsub table. I will ignore this.");
+  save i;
+  numeric i;
+  i:=hex(lookupnames_[0][0])+1;
+  lookupnames_[0][0]:=hexadecimal i;
+  lookupnames_[i][-1]:=name;
+  lookupnames_[i][-2]:=type;
+  lookupnames_[i][-3]:=flags;
+  lookupnames_[i][-4]:=feature;
+  lookupnames_[i][0]:="0"; % length of current subarray
+ endgroup
+enddef;
+
+% similar to addLookupSubtable() from python-fontforge
+% supname = name of the existing lookup table
+% subname = name of the new subtable
+def addLookupSubtable(expr supname,subname) = 
+ begingroup
+  save i,j; % i = index of lookup, j = index of subtable
+  numeric i,j; 
+  i:=0;
+  % find the index i by string comparison:
+  forever:
+   i:=i+1;
+   if i>hex(lookupnames_[0][0]):
+    errmessage("I could not find your specified lookup name. I will ignore it.");
+    i:=-1; % flag for "don't use it"
+    exitif true; % exit anyway
+   fi
+   exitif lookupnames_[i][-1]=supname;
+  endfor
+  if i>=0:
+   j:=hex(lookupnames_[i][0])+1;
+   lookupnames_[i][j]:=subname; 
+   lookupnames_[i][0]:=hexadecimal j; % length of current subarray
   fi
-  j:=hex(gsubtables_[i][0][0][0])+1;
-  gsubtables_[i][0][0][0]:=hexadecimal j; % length of gsubtables_[i]
-  %--- store first chars ---
-  k:=0; % number of first chars in gsubtables_[i][j]
-  for a=first:
-   k:=k+1;
-   gsubtables_[i][j][1][k]:=unicode a;
+ endgroup
+enddef;
+
+% similar to addPosSub() from python-fontforge
+% but mainly for glyph substitutions
+def addPosSub(expr subname)(expr glyph)(text possub) = 
+ begingroup
+  save i;
+  numeric i,j;
+  i:=hex(lookupdata_[0][0])+1;
+  lookupdata_[0][0]:=hexadecimal i;
+  lookupdata_[i][1]:=subname;
+  lookupdata_[i][2]:=unicode glyph;
+  j:=2; % number of data in lookupdata_[i]
+  for a=possub:
+   j:=j+1;
+   lookupdata_[i][j]:=unicode a;
   endfor
-  % number of first chars is stored at 0th position
-  gsubtables_[i][j][1][0]:=hexadecimal k; 
-  %--- store second chars ---
-  k:=0; % number of second chars in gsubtables_[i][j]
-  for a=second:
-   k:=k+1;
-   gsubtables_[i][j][2][k]:=unicode a;
-  endfor
-  % number of second chars is stored at 0th position
-  gsubtables_[i][j][2][0]:=hexadecimal k; 
+  lookupdata_[i][0]:=hexadecimal j; 
  endgroup
 enddef;
 
@@ -871,7 +810,7 @@ def font_fullname expr x = font_fullname_:=x enddef;
 def font_familyname expr x = font_familyname_:=x enddef;
 string font_identifier_, font_coding_scheme_, 
  font_name_, font_fullname_, font_familyname_,
- font_copyright_;
+ font_copyright_, font_version_;
 font_identifier_=font_coding_scheme_="UNSPECIFIED";
 % ----- end of some modifications by Linus Romer -----
 
@@ -916,7 +855,8 @@ def end =
   fi
  endfor
  for fvar = "font_identifier", "font_coding_scheme", "font_version",
-  "font_copyright", "font_name", "font_fullname", "font_familyname":
+  "font_copyright", "font_version", "font_name", "font_fullname", 
+  "font_familyname":
    if known scantokens (fvar & "_"):
     "mf2outline: " & fvar & " " & scantokens (fvar & "_") & char 10 &
    fi
@@ -952,89 +892,30 @@ def end =
    char 10 &
   endfor
  fi
- for i=1 upto 33:
-  if hex(gsubtables_[i][0][0][0])>0:
-   "mf2outline: gsubtable " &
-   if i=1: 
-    "liga"
-   elseif i=2:
-    "aalt"
-   elseif i=3:
-    "swsh"
-   elseif i=4:
-    "hist"; 
-   elseif i=5:
-    "locl" 
-   elseif i=6:
-    "rand" 
-   elseif i=7:
-    "nalt"
-   elseif i=8:
-    "salt"
-   elseif i=9:
-    "subs"
-   elseif i=10:
-    "sups"
-   elseif i=11:
-    "titl"
-   elseif i=12:
-    "clig"
-   elseif i=13:
-   "dlig"
-   elseif i=14:
-    "hlig"
-   elseif i=15:
-    "smcp"
-   elseif i=16:
-    "c2sc"
-   elseif i=17:
-    "pcap"
-   elseif i=18:
-    "c2pc"
-   elseif i=19:
-    "unic"
-   elseif i=20:
-    "ital"
-   elseif i=21:
-    "ordn"
-   elseif i=22:
-    "lnum"
-   elseif i=23:
-    "onum"
-   elseif i=24:
-    "pnum" 
-   elseif i=25:
-    "tnum"
-   elseif i=26:
-    "frac"
-   elseif i=27:
-    "afrc"
-   elseif i=28:
-    "dnom"
-    elseif i=29:
-    "numr"
-   elseif i=30:
-    "sinf"
-   elseif i=31:
-    "zero"
-   elseif i=32:
-    "mgrk" 
-   else:
-    "ss01"
-   fi
-   & char 10 &
-   for j=1 upto hex(gsubtables_[i][0][0][0]):
-    for k=1 upto hex(gsubtables_[i][j][1][0]):
-     gsubtables_[i][j][1][k] & char 32 &
-    endfor
-    char 10 &
-    for k=1 upto hex(gsubtables_[i][j][2][0]):
-     gsubtables_[i][j][2][k] & char 32 &
-    endfor
-    char 10 &
+ if hex(lookupnames_[0][0])>0:
+  "mf2outline: lookupnames " & char 10 &
+  for i=1 upto hex(lookupnames_[0][0]):
+   lookupnames_[i][0] & char 10 & % number of subtables
+   lookupnames_[i][-1] & char 10 & % name
+   lookupnames_[i][-2] & char 10 & % type
+   lookupnames_[i][-3] & char 10 & % flags
+   lookupnames_[i][-4] & char 10 & % feature
+   for j=1 upto hex(lookupnames_[i][0]): % subtable names
+    lookupnames_[i][j] & char 10 &
    endfor
-  fi
- endfor
+  endfor
+ fi
+ if hex(lookupdata_[0][0])>0:
+  "mf2outline: lookupdata " & char 10 &
+  for i=1 upto hex(lookupdata_[0][0]):
+   lookupdata_[i][1] & char 10 &
+   lookupdata_[i][2] & char 10 &
+   for j=3 upto hex(lookupdata_[i][0]):
+    lookupdata_[i][j] & char 32 &
+   endfor
+   char 10 &
+  endfor
+ fi
  "mf2outline: eof"
  to "mf2outline.txt"; 
 savedend; 

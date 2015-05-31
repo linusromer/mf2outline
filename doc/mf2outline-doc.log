@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2014.8.20)  26 MAY 2015 21:02
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2014.8.20)  31 MAY 2015 19:12
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1341,26 +1341,7 @@ Package microtype Info: Character `textendash ' is missing
 Package microtype Info: Character `textemdash ' is missing
 (microtype)             in font `T1/zi4/m/n/9'.
 (microtype)             Ignoring protrusion settings for this character.
-[5] [6] (/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang1.sty
-File: lstlang1.sty 2013/08/26 1.5b listings language file
-)
-(/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang2.sty
-File: lstlang2.sty 2013/08/26 1.5b listings language file
-)
-(/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang3.sty
-File: lstlang3.sty 2013/08/26 1.5b listings language file
-)
-
-LaTeX Font Warning: Font shape `T1/zi4/m/it' undefined
-(Font)              using `T1/zi4/m/n' instead on input line 283.
-
-Package microtype Info: Character `textendash ' is missing
-(microtype)             in font `T1/zi4/m/it/9'.
-(microtype)             Ignoring protrusion settings for this character.
-Package microtype Info: Character `textemdash ' is missing
-(microtype)             in font `T1/zi4/m/it/9'.
-(microtype)             Ignoring protrusion settings for this character.
-(/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang1.sty
+[5] (/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2013/08/26 1.5b listings language file
 )
 (/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang2.sty
@@ -1371,7 +1352,7 @@ File: lstlang3.sty 2013/08/26 1.5b listings language file
 )
 (/usr/share/texlive/texmf-dist/tex/latex/listings/lstmisc.sty
 File: lstmisc.sty 2013/08/26 1.5b (Carsten Heinz)
-) [7]
+)
 Package microtype Info: Character `textendash ' is missing
 (microtype)             in font `T1/zi4/b/n/9'.
 (microtype)             Ignoring protrusion settings for this character.
@@ -1379,28 +1360,37 @@ Package microtype Info: Character `textemdash ' is missing
 (microtype)             in font `T1/zi4/b/n/9'.
 (microtype)             Ignoring protrusion settings for this character.
 LaTeX Font Info:    Font shape `T1/mdbch/m/n' will be
-(Font)              scaled to size 5.76004pt on input line 310.
- [8] [9]
-[10]
-Overfull \hbox (29.5034pt too wide) in paragraph at lines 480--482
+(Font)              scaled to size 5.76004pt on input line 229.
+ [6] [7]
+
+LaTeX Font Warning: Font shape `T1/zi4/m/it' undefined
+(Font)              using `T1/zi4/m/n' instead on input line 311.
+
+Package microtype Info: Character `textendash ' is missing
+(microtype)             in font `T1/zi4/m/it/9'.
+(microtype)             Ignoring protrusion settings for this character.
+Package microtype Info: Character `textemdash ' is missing
+(microtype)             in font `T1/zi4/m/it/9'.
+(microtype)             Ignoring protrusion settings for this character.
+[8] [9]
+Overfull \hbox (29.5034pt too wide) in paragraph at lines 399--401
 \T1/mdbch/m/n/10.95 (-20) All the global font pa-ram-e-ters, kern-ing, po-si-ti
 on and sub-sti-tu-tion data are writ-ten to \T1/zi4/m/n/10.95 mf2outline.txt\T1
 /mdbch/m/n/10.95 (-20) ,
  []
 
-[11]
 LaTeX Font Info:    Font shape `T1/ffm/m/it' in size <10.95> not available
-(Font)              Font shape `T1/ffm/m/sl' tried instead on input line 489.
- [12] (./mf2outline-doc.aux)
+(Font)              Font shape `T1/ffm/m/sl' tried instead on input line 408.
+[10] (./mf2outline-doc.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
  ) 
 Here is how much of TeX's memory you used:
- 18983 strings out of 494935
- 324167 string characters out of 6178122
- 546162 words of memory out of 5000000
- 21653 multiletter control sequences out of 15000+600000
+ 18625 strings out of 494935
+ 318960 string characters out of 6178122
+ 519242 words of memory out of 5000000
+ 21301 multiletter control sequences out of 15000+600000
  71165 words of font info for 194 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
  65i,10n,72p,593b,1681s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -1417,10 +1407,10 @@ t/fonts/type1/public/mathdesign/mdbch/md-chr7t.pfb></usr/share/texlive/texmf-di
 st/fonts/type1/public/mathdesign/mdbch/md-chr7v.pfb></usr/share/texlive/texmf-d
 ist/fonts/type1/public/mathdesign/mdbch/md-chr7y.pfb></usr/share/texlive/texmf-
 dist/fonts/type1/public/mathdesign/mdbch/md-chr8t.pfb>
-Output written on mf2outline-doc.pdf (12 pages, 132620 bytes).
+Output written on mf2outline-doc.pdf (10 pages, 131454 bytes).
 PDF statistics:
- 96 PDF objects out of 1000 (max. 8388607)
- 69 compressed objects within 1 object stream
+ 90 PDF objects out of 1000 (max. 8388607)
+ 65 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  30733 words of extra memory for PDF output out of 35830 (max. 10000000)
 

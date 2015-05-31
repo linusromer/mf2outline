@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20150519
+#mf2outline version 20150531
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -170,8 +170,6 @@ if __name__ == "__main__":
 	else:
 		font.design_size = args.designsize
 	
-	if args.verbose:
-		print "Running METAPOST for tfm and eps files..." 
 	mffile = os.path.abspath("%s" % args.mfsource)
 	tempdir = tempfile.mkdtemp()
 	mpargs = ['mpost',
@@ -184,12 +182,17 @@ if __name__ == "__main__":
 	'outputtemplate:=\"%{charunicode}.eps\";',
 	'input %s;' % mffile,
 	'bye']
+	if args.verbose:
+		print "Running METAPOST..."
+		print "-------------------"
 	subprocess.call(
 		mpargs,
-		stdout = subprocess.PIPE, 
+		stdout = None if args.verbose else subprocess.PIPE, 
 		stderr = subprocess.PIPE,
 		cwd = tempdir
 		)
+	if args.verbose:
+		print "-------------------"
 	
 	if args.designsize == None:	
 		if args.verbose:
@@ -296,7 +299,7 @@ if __name__ == "__main__":
 		args.encoding = originalencoding
 	if args.encoding == "Unicode" or args.encoding == "unicode":
 		font.encoding = "unicode"
-	if args.encoding == "t1" or args.encoding == "T1": # tex cork encoding (8bit)
+	elif args.encoding == "t1" or args.encoding == "T1": # tex cork encoding (8bit)
 		with open(os.path.join(tempdir, "t1.enc"), "w") as encfile:
 			encfile.write("/T1Encoding [\n")
 			encfile.write("/grave           % 0x00 U+0060\n")
@@ -901,6 +904,9 @@ if __name__ == "__main__":
 		if outlineformat == "sfd":
 			font.save("%s.%s" % (outputname,outlineformat))
 		elif outlineformat == "pdf":
+			if args.veryverbose:
+				print "Running METAPOST..."
+				print "-------------------"
 			subprocess.call( # run mpost in proof mode
 			['mpost',
 			'&%s/mf2outline' % os.path.split(os.path.abspath(sys.argv[0]))[0],
@@ -909,10 +915,12 @@ if __name__ == "__main__":
 			'outputtemplate:=\"%{charunicode}.mps\";',
 			'input %s;' % mffile,
 			'bye'],
-			stdout = subprocess.PIPE, 
+			stdout = None if args.veryverbose else subprocess.PIPE, 
 			stderr = subprocess.PIPE,
 			cwd = tempdir
 			)
+			if args.veryverbose:
+				print "-------------------"
 			# write tex-file for proof images
 			with open(os.path.join(tempdir, "%s.tex" % outputname), "w") as texfile:
 				texfile.write("\documentclass{article}\n")
@@ -947,15 +955,21 @@ if __name__ == "__main__":
 					texfile.write("\includegraphics{%s}\\newpage\n" % i)
 				texfile.write("\end{center}\n")
 				texfile.write("\end{document}\n")
+			if args.veryverbose:
+				print "Running LaTeX..."
+				print "-------------------"
 			subprocess.call(
 			['latex',"%s.tex" % outputname],
-			stdout = subprocess.PIPE, 
+			stdout = None if args.veryverbose else subprocess.PIPE, 
 			stderr = subprocess.PIPE,
 			cwd = tempdir
 			)
+			if args.veryverbose:
+				print "-------------------"
+				print "Running dvipdfmx..."
 			subprocess.call(
 			['dvipdfmx',"%s.dvi" % outputname],
-			stdout = subprocess.PIPE, 
+			stdout = None if args.veryverbose else subprocess.PIPE, 
 			stderr = subprocess.PIPE,
 			cwd = tempdir
 			)

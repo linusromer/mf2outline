@@ -190,103 +190,22 @@ font_quad .69designsize;
 font_normal_shrink .08designsize;
 font_os_weight 400;                  % weight 400 means regular, 700 means bold
 font_os_width 5;                     % width 5 means regular, 3 means condensed
+
 % ... (definitions of font variables and glyphs) ...
-addkernclassl("0041"); % A
-addkernclassl("0056","0057"); % V
-
-addkernclassr("0041"); % A
-addkernclassr("0056","0057"); % V
-
-addclasskern("0041","0056",-110u_cap#); 
-addclasskern("0056","0041",-110u_cap#); 
 
 addLookup("Standard Ligatures","gsub_ligature","()","(('liga',(('latn',('dflt')),)),)");
 addLookupSubtable("Standard Ligatures","Standard Ligatures subtable");
-addPosSub("Standard Ligatures subtable")("FB00")("0066","0066") % ff
-addPosSub("Standard Ligatures subtable")("FB04")("0066","0066","006C") % ffl
+addPosSub("Standard Ligatures subtable")("FB00")("0066","0066"); % ff
+addPosSub("Standard Ligatures subtable")("FB04")("0066","0066","006C"); % ffl
 
 addLookup("Small Capitals","gsub_single","()","(('smcp',(('latn',('dflt')),)),)");
 addLookupSubtable("Small Capitals","Small Capitals subtable");
-addPosSub("Small Capitals subtable")("0068")("E02A") % h
+addPosSub("Small Capitals subtable")("0068")("E02A"); % h
 
 addLookup("Capitals to Small Capitals","gsub_single","()",
 "(('c2sc',(('latn',('dflt')),)),)");
 addLookupSubtable("Capitals to Small Capitals","Capitals to Small Capitals subtable");
-addPosSub("Capitals to Small Capitals subtable")("0048")("E02A") % H
-\end{lstlisting}
-%
-This will produce a temporary \texttt{mf2outline.txt} file:
-\lstset{columns=fullflexible}
-\begin{lstlisting}
-mf2outline: font_size 10
-mf2outline: font_slant 0
-mf2outline: font_normal_space 2.29996
-mf2outline: font_normal_shrink 0.80002
-mf2outline: font_x_height 4.34998
-mf2outline: font_quad 6.90002
-mf2outline: font_os_weight 400
-mf2outline: font_os_width 5
-mf2outline: font_identifier FQDR
-mf2outline: font_coding_scheme Unicode
-mf2outline: font_version 1.000
-mf2outline: font_copyright Linus Romer, 2015
-mf2outline: font_version 1.000
-mf2outline: font_name Quindesch-Regular10
-mf2outline: font_fullname Quindesch Regular 10
-mf2outline: font_familyname Quindesch
-mf2outline: kerningclassesl 
-0041 
-0056 0057 
-mf2outline: kerningclassesr 
-0041 
-0056 0057 
-mf2outline: kerningmatrix 
-0 -1.0994 
--1.0994 0 
-mf2outline: lookupnames 
-1
-Standard Ligatures
-gsub_ligature
-()
-(('liga',(('latn',('dflt')),)),)
-Standard Ligatures subtable
-1
-Small Capitals
-gsub_single
-()
-(('smcp',(('latn',('dflt')),)),)
-Small Capitals subtable
-1
-Capitals to Small Capitals
-gsub_single
-()
-(('c2sc',(('latn',('dflt')),)),)
-Capitals to Small Capitals subtable
-mf2outline: lookupdata 
-Standard Ligatures subtable
-FB00
-0066 0066 
-Standard Ligatures subtable
-FB04
-0066 0066 006C 
-Small Capitals subtable
-0068
-E02A 
-Capitals to Small Capitals subtable
-0048
-E02A 
-mf2outline: eof
-\end{lstlisting}
-%
-Snippet from a PostScript file containing special \texttt{mf2outline} information:\lstset{language=PostScript,columns=fullflexible}
-\begin{lstlisting}
-% mf2outline: charwd 7.28752
-% mf2outline: charht 6.49994
-% mf2outline: chardp 0
-% mf2outline: charic 0
-% mf2outline: charcode 79
-% mf2outline: charext 0
-% mf2outline: charunicode 004F
+addPosSub("Capitals to Small Capitals subtable")("0048")("E02A"); % H
 \end{lstlisting}
 %
 \section{The \texttt{mf2outline.mp} Base}
