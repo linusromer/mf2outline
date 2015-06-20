@@ -10,7 +10,7 @@
 \contentsline {section}{\numberline {4}The \texttt {mf2outline.mp} Base}{6}
 \contentsline {subsection}{\numberline {4.1}Unicode Support}{6}
 \contentsline {subsection}{\numberline {4.2}Additional Font and Glyph Parameters}{8}
-\contentsline {subsubsection}{\numberline {4.2.1}The Old Way --- TFM}{9}
+\contentsline {subsubsection}{\numberline {4.2.1}The Old Way --- TFM}{8}
 \contentsline {subsubsection}{\numberline {4.2.2}The New Way --- \texttt {mf2outline.txt} \& PostScript Comments}{9}
 \contentsline {subsection}{\numberline {4.3}Kerning}{10}
 \contentsline {subsection}{\numberline {4.4}Position \& Substitution Data}{10}
