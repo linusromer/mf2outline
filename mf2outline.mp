@@ -121,9 +121,12 @@ vardef whatever = save ?; ? enddef;
 % unary operators
 let abs = length;
 
-vardef round primary u = u enddef;
-vardef hround primary x = x enddef;
-vardef vround primary y = y enddef;
+vardef round primary u =
+ if numeric u: floor(u+.5)
+ elseif pair u: (hround xpart u, vround ypart u)
+ else: u fi enddef;
+vardef hround primary x = floor(x+.5) enddef;
+vardef vround primary y = floor(y.o_+.5)_o_ enddef;
 
 vardef ceiling primary x = -floor(-x) enddef;
 
