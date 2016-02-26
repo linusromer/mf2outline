@@ -194,19 +194,12 @@ font_os_width 5;                     % width 5 means regular, 3 means condensed
 
 % ... (definitions of font variables and glyphs) ...
 
-addLookup("Standard Ligatures","gsub_ligature","()","(('liga',(('latn',('dflt')),)),)");
-addLookupSubtable("Standard Ligatures","Standard Ligatures subtable");
-addPosSub("Standard Ligatures subtable")("FB00")("0066","0066"); % ff
-addPosSub("Standard Ligatures subtable")("FB04")("0066","0066","006C"); % ffl
-
-addLookup("Small Capitals","gsub_single","()","(('smcp',(('latn',('dflt')),)),)");
-addLookupSubtable("Small Capitals","Small Capitals subtable");
-addPosSub("Small Capitals subtable")("0068")("E02A"); % h
-
-addLookup("Capitals to Small Capitals","gsub_single","()",
-"(('c2sc',(('latn',('dflt')),)),)");
-addLookupSubtable("Capitals to Small Capitals","Capitals to Small Capitals subtable");
-addPosSub("Capitals to Small Capitals subtable")("0048")("E02A"); % H
+fontforge("font.addLookup('ligatures','gsub_ligature',(),(('liga',(('latn',('dflt')),)),))");
+fontforge("font.addLookupSubtable('ligatures','ligatures subtable')");
+fontforge("font['uniFB00'].addPosSub('ligatures subtable',('f','f'))");
+fontforge("font.addLookup('kerning','gpos_pair',(),(('kern',(('latn',('dflt')),)),))");
+fontforge("font.addLookupSubtable('kerning','kerning subtable')");
+fontforge("font['A'].addPosSub('kerning subtable','V',-100)");
 \end{lstlisting}
 %
 \section{The \texttt{mf2outline.mp} Base}
@@ -382,18 +375,14 @@ The \texttt{mf2outline.mp} base defines some new parameters that cannot be store
 	\end{itemize}
 \end{itemize}
 %
-\subsection{Kerning}
+\subsection{Kerning and Ligatures}
 %
 If one want to kern the pair «AV» in \MF{} one needs an instruction like
 \lstset{language=MetaPost,columns=fullflexible}
 \begin{lstlisting}
 ligtable "A": "V" kern -u#;
 \end{lstlisting}
-However, \texttt{ligtable} cannot handle unicode characters nor kerning classes. The \texttt{mf2outline} solution can handle unicode characters and uses kerning classes. Firstly, one has to define the kerning classes (\verb|addkernclassl| for letters that share the same shape to the right, \verb|addkernclassr| for letters that share the same shape to the left). Kerning values can then be added by \verb|addclasskern|.
-%
-\subsection{Position \& Substitution Data}
-%
-Except for kerning, positioning and substitution data can be defined by the macros \texttt{addPosSub}, \texttt{addLookup} and \texttt{addLookupSubtable}. These macros work like their corresponding python functions of python-fontforge described in \cite{williams15}.
+However, \texttt{ligtable} cannot handle unicode characters nor kerning classes. Use fontforge macros inside the \verb|fontforge()| command. These macros work like their corresponding python functions of python-fontforge described in \cite{williams15}.
 %
 \subsection{Writing Temporary Text Files}
 %

@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20150531";
+string base_name, base_version; base_name="mf2outline"; base_version="20160226";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -614,6 +614,7 @@ def beginchar(expr c,w_sharp,h_sharp,d_sharp) =
     charunicode:=if known c: unicode c else: "0000" fi; 
     charcode:=hex(substring(2,4) of charunicode); % this is the place inside the unicode subplane
     charext:=hex(substring(0,2) of charunicode); % this is the number of the unicode subplane
+    %charplane:=hex(substring(0,2) of charunicode); % this is the number of the unicode plane (0 to 16)
     charwd:=w_sharp;      charht:=h_sharp;       chardp:=d_sharp;
     w:=charwd*pt; h:=charht*pt; d:=chardp*pt;
     charic:=0; clearxy; clearit; clearpen; scantokens extra_beginchar;
@@ -634,144 +635,19 @@ def endchar =
   endgroup
 enddef;
 
-% kernings and ligatures
-string kernclassesl_[][], % list of left kerning classes
- kernclassesr_[][], % list of right kerning classes
- lookupnames_[][], % names of the lookups (including subtable names)
- lookupdata_[][]; % data of the lookups
-numeric kernmatrix_[][]; % matrix with kerning entries
-kernclassesl_[0][0]="0"; % number of kernclassesl (will be increased)
-kernclassesr_[0][0]="0"; % number of kernclassesr (will be increased)
-lookupnames_[0][0]="0"; % number of lookup names (will be increased)
-lookupdata_[0][0]="0"; % number of lookup names (will be increased)
+string fontforgecommands_[]; % list of fontforge command
+fontforgecommands_[0]="0"; % number of commands (will be increased)
 
-% add a left kerning class to kernclassesl
-% a is a comma separated list of codes, like addkernclassl(86,87,"c","004A");
-% the codes may be numbers, ASCII letters or unicode strings
-% but they are always stored as unicode strings
-% the lengths of the array is stored as hexadecimal strings
-def addkernclassl(text a) = 
- begingroup
-  save i,l;
-  numeric i,l;
-  l:=hex(kernclassesl_[0][0])+1;
-  kernclassesl_[0][0]:=hexadecimal l;
-  i:=0; % number of chars in current class
-  for b=a:
-   i:=i+1;
-   kernclassesl_[l][i]:=unicode b;
-  endfor
-  % number of chars in current class is stored at 0th position
-  kernclassesl_[l][0]:=hexadecimal i; 
- endgroup
-enddef;
-
-% add a right kerning class to kernclassesr
-% a is a comma separated list of codes, addkernclassr(86,87,"c","004A");
-def addkernclassr(text a) = 
- begingroup
-  save i,l;
-  numeric i,l;
-  l:=hex(kernclassesr_[0][0])+1;
-  kernclassesr_[0][0]:=hexadecimal l;
-  i:=0; % number of chars in current class
-  for b=a:
-   i:=i+1;
-   kernclassesr_[l][i]:=unicode b;
-  endfor
-  % number of chars in current class is stored at 0th position
-  kernclassesr_[l][0]:=hexadecimal i; 
- endgroup
-enddef;
-
-% kern all chars of left class and right class by kvalue
-% identification is done by the first code of the class
-def addclasskern(expr left,right,kvalue) = 
- begingroup
-  save i,j;
-  numeric i,j;
-  % get the indices i and j of the two classes:
-  i:=0; % default value (cannot be true)
-  j:=0; % default value (cannot be true)
-  forever:
-   i:=i+1;
-   exitif kernclassesl_[i][1]=unicode(left);
-   if i=hex(kernclassesl_[0][0]):
-    errmessage("unknown left kerning class");
-   fi
-  endfor
-  forever:
-   j:=j+1;
-  exitif kernclassesl_[j][1]=unicode(right);
-   if j=hex(kernclassesl_[0][0]):
-    errmessage("unknown right kerning class");
-   fi
-  endfor
-  kernmatrix_[i][j]:=kvalue;
- endgroup
-enddef;
-
-% similar to addLookup() from python-fontforge
-% name, type, flags and feature are strings
-def addLookup(expr name,type,flags,feature) = 
+% store a fontforge command into fontforgecommands_[]
+def fontforge(expr command) = 
  begingroup
   save i;
   numeric i;
-  i:=hex(lookupnames_[0][0])+1;
-  lookupnames_[0][0]:=hexadecimal i;
-  lookupnames_[i][-1]:=name;
-  lookupnames_[i][-2]:=type;
-  lookupnames_[i][-3]:=flags;
-  lookupnames_[i][-4]:=feature;
-  lookupnames_[i][0]:="0"; % length of current subarray
+  i:=hex(fontforgecommands_[0])+1;
+  fontforgecommands_[0]:=hexadecimal i;
+  fontforgecommands_[i]:=command;
  endgroup
 enddef;
-
-% similar to addLookupSubtable() from python-fontforge
-% supname = name of the existing lookup table
-% subname = name of the new subtable
-def addLookupSubtable(expr supname,subname) = 
- begingroup
-  save i,j; % i = index of lookup, j = index of subtable
-  numeric i,j; 
-  i:=0;
-  % find the index i by string comparison:
-  forever:
-   i:=i+1;
-   if i>hex(lookupnames_[0][0]):
-    errmessage("I could not find your specified lookup name. I will ignore it.");
-    i:=-1; % flag for "don't use it"
-    exitif true; % exit anyway
-   fi
-   exitif lookupnames_[i][-1]=supname;
-  endfor
-  if i>=0:
-   j:=hex(lookupnames_[i][0])+1;
-   lookupnames_[i][j]:=subname; 
-   lookupnames_[i][0]:=hexadecimal j; % length of current subarray
-  fi
- endgroup
-enddef;
-
-% similar to addPosSub() from python-fontforge
-% but mainly for glyph substitutions
-def addPosSub(expr subname)(expr glyph)(text possub) = 
- begingroup
-  save i;
-  numeric i,j;
-  i:=hex(lookupdata_[0][0])+1;
-  lookupdata_[0][0]:=hexadecimal i;
-  lookupdata_[i][1]:=subname;
-  lookupdata_[i][2]:=unicode glyph;
-  j:=2; % number of data in lookupdata_[i]
-  for a=possub:
-   j:=j+1;
-   lookupdata_[i][j]:=unicode a;
-  endfor
-  lookupdata_[i][0]:=hexadecimal j; 
- endgroup
-enddef;
-
 % ------ end of modifications by Linus Romer -----
 
 def italcorr expr x_sharp = if x_sharp>0: charic:=x_sharp fi enddef;
@@ -864,59 +740,10 @@ def end =
     "mf2outline: " & fvar & " " & scantokens (fvar & "_") & char 10 &
    fi
  endfor
- if hex(kernclassesl_[0][0])>0:
-  "mf2outline: kerningclassesl " & char 10 &
-  for i=1 upto hex(kernclassesl_[0][0]):
-   for j=1 upto hex(kernclassesl_[i][0]):
-    kernclassesl_[i][j] & char 32 &
-   endfor
-   char 10 &
-  endfor
- fi
- if hex(kernclassesr_[0][0])>0:
-  "mf2outline: kerningclassesr " & char 10 &
-  for i=1 upto hex(kernclassesr_[0][0]):
-   for j=1 upto hex(kernclassesr_[i][0]):
-    kernclassesr_[i][j] & char 32 &
-   endfor
-   char 10 &
-  endfor
- fi
- if (hex(kernclassesl_[0][0])>0) and (hex(kernclassesr_[0][0])>0):
-  "mf2outline: kerningmatrix " & char 10 &
-  for i=1 upto hex(kernclassesl_[0][0]):
-   for j=1 upto hex(kernclassesr_[0][0]):
-    if known kernmatrix_[i][j]:
-     decimal(kernmatrix_[i][j]) & char 32 &
-    else:
-     char 48 & char 32 &
-    fi
-   endfor
-   char 10 &
-  endfor
- fi
- if hex(lookupnames_[0][0])>0:
-  "mf2outline: lookupnames " & char 10 &
-  for i=1 upto hex(lookupnames_[0][0]):
-   lookupnames_[i][0] & char 10 & % number of subtables
-   lookupnames_[i][-1] & char 10 & % name
-   lookupnames_[i][-2] & char 10 & % type
-   lookupnames_[i][-3] & char 10 & % flags
-   lookupnames_[i][-4] & char 10 & % feature
-   for j=1 upto hex(lookupnames_[i][0]): % subtable names
-    lookupnames_[i][j] & char 10 &
-   endfor
-  endfor
- fi
- if hex(lookupdata_[0][0])>0:
-  "mf2outline: lookupdata " & char 10 &
-  for i=1 upto hex(lookupdata_[0][0]):
-   lookupdata_[i][1] & char 10 &
-   lookupdata_[i][2] & char 10 &
-   for j=3 upto hex(lookupdata_[i][0]):
-    lookupdata_[i][j] & char 32 &
-   endfor
-   char 10 &
+ if hex(fontforgecommands_[0])>0:
+  "mf2outline: fontforge " & char 10 &
+  for i=1 upto hex(fontforgecommands_[0]):
+   fontforgecommands_[i] & char 10 &
   endfor
  fi
  "mf2outline: eof"

@@ -1,11 +1,11 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2014.8.20)  20 JUN 2015 15:21
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.12.24)  26 FEB 2016 18:32
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
 **mf2outline-doc.tex
 (./mf2outline-doc.tex
 LaTeX2e <2011/06/27>
-Babel <3.9h> and hyphenation patterns for 9 languages loaded.
+Babel <3.9h> and hyphenation patterns for 29 languages loaded.
 (/usr/share/texlive/texmf-dist/tex/latex/koma-script/scrartcl.cls
 Document Class: scrartcl 2013/12/19 v3.12 KOMA-Script document class (article)
 (/usr/share/texlive/texmf-dist/tex/latex/koma-script/scrkbase.sty
@@ -1311,7 +1311,7 @@ Package microtype Info: Character `textcelsius ' is missing
 
 
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+{/home/xx/.texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
 Package microtype Info: Character `textendash ' is missing
 (microtype)             in font `T1/zi4/b/n/14.4'.
 (microtype)             Ignoring protrusion settings for this character.
@@ -1360,11 +1360,11 @@ Package microtype Info: Character `textemdash ' is missing
 (microtype)             in font `T1/zi4/b/n/9'.
 (microtype)             Ignoring protrusion settings for this character.
 LaTeX Font Info:    Font shape `T1/mdbch/m/n' will be
-(Font)              scaled to size 5.76004pt on input line 230.
+(Font)              scaled to size 5.76004pt on input line 223.
  [6] [7]
 
 LaTeX Font Warning: Font shape `T1/zi4/m/it' undefined
-(Font)              using `T1/zi4/m/n' instead on input line 312.
+(Font)              using `T1/zi4/m/n' instead on input line 305.
 
 Package microtype Info: Character `textendash ' is missing
 (microtype)             in font `T1/zi4/m/it/9'.
@@ -1373,26 +1373,26 @@ Package microtype Info: Character `textemdash ' is missing
 (microtype)             in font `T1/zi4/m/it/9'.
 (microtype)             Ignoring protrusion settings for this character.
 [8] [9]
-Overfull \hbox (29.5034pt too wide) in paragraph at lines 400--402
+Overfull \hbox (29.5034pt too wide) in paragraph at lines 389--391
 \T1/mdbch/m/n/10.95 (-20) All the global font pa-ram-e-ters, kern-ing, po-si-ti
 on and sub-sti-tu-tion data are writ-ten to \T1/zi4/m/n/10.95 mf2outline.txt\T1
 /mdbch/m/n/10.95 (-20) ,
  []
 
 LaTeX Font Info:    Font shape `T1/ffm/m/it' in size <10.95> not available
-(Font)              Font shape `T1/ffm/m/sl' tried instead on input line 409.
+(Font)              Font shape `T1/ffm/m/sl' tried instead on input line 398.
 [10] (./mf2outline-doc.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
  ) 
 Here is how much of TeX's memory you used:
- 18629 strings out of 494935
- 319000 string characters out of 6178122
- 509133 words of memory out of 5000000
- 21301 multiletter control sequences out of 15000+600000
- 71400 words of font info for 197 fonts, out of 8000000 for 9000
- 36 hyphenation exceptions out of 8191
+ 18625 strings out of 494068
+ 318956 string characters out of 6162750
+ 505409 words of memory out of 5000000
+ 21447 multiletter control sequences out of 15000+600000
+ 71162 words of font info for 194 fonts, out of 8000000 for 9000
+ 583 hyphenation exceptions out of 8191
  65i,10n,72p,593b,1681s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/ly1/texnansi.enc}{/usr/share/t
 exlive/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc}</usr/share/texlive/t
@@ -1407,7 +1407,7 @@ t/fonts/type1/public/mathdesign/mdbch/md-chr7t.pfb></usr/share/texlive/texmf-di
 st/fonts/type1/public/mathdesign/mdbch/md-chr7v.pfb></usr/share/texlive/texmf-d
 ist/fonts/type1/public/mathdesign/mdbch/md-chr7y.pfb></usr/share/texlive/texmf-
 dist/fonts/type1/public/mathdesign/mdbch/md-chr8t.pfb>
-Output written on mf2outline-doc.pdf (10 pages, 130989 bytes).
+Output written on mf2outline-doc.pdf (10 pages, 130476 bytes).
 PDF statistics:
  90 PDF objects out of 1000 (max. 8388607)
  65 compressed objects within 1 object stream
