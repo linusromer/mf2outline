@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20160226
+#mf2outline version 20160303
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -84,7 +84,7 @@ def generate_pdf(font,mffile,outputname,tempdir,mainargs):
 			texfile.write("depth (pt/1000) & %s\\\\\hline\n" % font[code].texdepth)
 			texfile.write("italic correction (pt/1000) & %s\\\\\hline\n" % font[code].italicCorrection)
 			texfile.write("\end{tabular}\\\\[3ex]\n")
-			texfile.write("\includegraphics{%s}\\newpage\n" % i)
+			texfile.write("\includegraphics[scale=%s]{%s}\\newpage\n" % (10.0/font.design_size,i) )
 		texfile.write("\end{center}\n")
 		texfile.write("\end{document}\n")
 	subprocess.call(
@@ -732,6 +732,7 @@ if __name__ == "__main__":
 		fontforge.loadEncodingFile(os.path.join(os.path.split(os.path.abspath("%s" % args.mfsource))[0],"%s.enc" %args.encoding))
 		font.encoding = args.encoding
 	else:
+		print os.path.join(os.path.split(os.path.abspath("%s" % args.mfsource))[0],"%s.enc" %args.encoding)
 		if args.verbose:
 			print "I do not know this encoding but will continue with Unicode (BMP)"
 		font.encoding = "unicode"
@@ -791,7 +792,7 @@ if __name__ == "__main__":
 			glyph = font.createChar(code,fontforge.nameFromUnicode(code))
 		else:
 			glyph = font.createMappedChar(code)
-		if (args.encoding == "unicode") and (code != 32) or (args.encoding == "t1" and code != 23): # do not read space/cwm (it will be empty)
+		if not ((args.encoding == "unicode") and (code == 32) or (args.encoding == "t1" and code == 23)): # do not read space/cwm (it will be empty)
 			glyph.importOutlines(eps, ("toobigwarn", "correctdir"))
 		with open(eps, "r") as epsfile:
 			for line in epsfile:
