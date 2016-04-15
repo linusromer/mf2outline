@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20160303
+#mf2outline version 20160415
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -854,8 +854,8 @@ if __name__ == "__main__":
 				print "Simplifying"
 			font.simplify()
 			if args.veryverbose:
-				print "Rounding"
-			font.round()
+				print "Rounding to 1/100 unit"
+			font.round(100)
 			if args.veryverbose:
 				print "Removing overlaps"
 			font.removeOverlap()
