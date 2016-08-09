@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20160803
+#mf2outline version 20160809
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -550,19 +550,19 @@ if __name__ == "__main__":
 		dest="fullname",
 		metavar="FULL",
 		type=str,
-		default="Unknown",
+		default=None,
 		help="Set the full name to FULL (with modifiers and possible spaces).")	
 	parser.add_argument("--fontname", 
 		dest="fontname",
 		metavar="NAME",
 		type=str,
-		default="Unknown",
+		default=None,
 		help="Set the font name to NAME (with modifiers and without spaces).")	
 	parser.add_argument("--familyname", 
 		dest="familyname",
 		metavar="FAM",
 		type=str,
-		default="Unknown",
+		default=None,
 		help="Set the font family name to FAM.")		
 	parser.add_argument("--fullname-as-filename",
 		action="store_true",
@@ -573,19 +573,19 @@ if __name__ == "__main__":
 		dest="version",
 		metavar="VERS",
 		type=str,
-		default="001.001",
-		help="Set the version of the font to VERS. Default: 001.001")	
+		default=None,
+		help="Set the version of the font to VERS.")
 	parser.add_argument("--copyright", 
 		dest="copyright",
 		metavar="COPY",
 		type=str,
-		default="",
+		default=None,
 		help="Set the copyright notice of the font to COPY.")		
 	parser.add_argument("--vendor", 
 		dest="vendor",
 		metavar="VEND",
 		type=str,
-		default="",
+		default=None,
 		help="Set the vendor name of the font to VEND (limited to 4 " \
 		"characters).")	
 	parser.add_argument("--weight", 
@@ -747,6 +747,8 @@ if __name__ == "__main__":
 		font.familyname = args.familyname
 	if args.version:
 		font.version = args.version
+	else:
+		font.version = "001.001"
 	if args.copyright:
 		font.copyright = args.copyright
 	if args.vendor:
