@@ -865,6 +865,9 @@ if __name__ == "__main__":
 				print "Correcting directions"
 			font.correctDirection()
 			if args.veryverbose:
+				print "Rounding"
+			font.round() # otherwise, extrema may be ugly
+			if args.veryverbose:
 				print "Adding extrema"
 			font.addExtrema()
 			if args.veryverbose:
