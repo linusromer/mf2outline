@@ -589,16 +589,16 @@ vardef unicode primary n =
  if string n:
   if length(n)=1: % assume n to be a glyph name like "W"
    hexadecimal(ASCII n);
-  else: % assume n to be a unicode like "004A" (or even "4A")
+  else: % assume n to be a unicode like "00004A", "004A" or "4A"
    n;
   fi
  else: % assume n to be a numeric 
   hexadecimal n;
  fi 
- % now fill zeroes to be a 4-digit word:
+ % now fill zeroes to be a 6-digit word:
  z:=
- if length(s)<4:
-  for i=1 upto (4-length(s)): "0" & endfor s;
+ if length(s)<6:
+  for i=1 upto (6-length(s)): "0" & endfor s;
  else:
   s;
  fi
@@ -611,10 +611,10 @@ enddef;
 newinternal string charunicode;
 def beginchar(expr c,w_sharp,h_sharp,d_sharp) =
   begingroup
-    charunicode:=if known c: unicode c else: "0000" fi; 
-    charcode:=hex(substring(2,4) of charunicode); % this is the place inside the unicode subplane
-    charext:=hex(substring(0,2) of charunicode); % this is the number of the unicode subplane
-    %charplane:=hex(substring(0,2) of charunicode); % this is the number of the unicode plane (0 to 16)
+    charunicode:=if known c: unicode c else: "000000" fi; 
+    charcode:=hex(substring(4,6) of charunicode); % this is the place inside the unicode subplane
+    charext:=hex(substring(0,4) of charunicode); % this is the number of the unicode subplane
+    % including the unicode plane (0 to 16)
     charwd:=w_sharp;      charht:=h_sharp;       chardp:=d_sharp;
     w:=charwd*pt; h:=charht*pt; d:=chardp*pt;
     charic:=0; clearxy; clearit; clearpen; scantokens extra_beginchar;
