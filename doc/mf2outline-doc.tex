@@ -218,9 +218,9 @@ def beginchar(expr c,w_sharp,h_sharp,d_sharp) =
  enddef;
 \end{lstlisting}
 %
-Another restriction is common to both, \MF{} and \MP: Numbers are represented in fixed point arithmetic as integer multiples of $2^{-16}$ and can (normally) not be greater than $4096=2^{12}$. The Basic Multilingual Plane of Unicode contains $2^{16}=65\,536$ glyphs, enumerated in hexadecimal numbers from 0000 upto FFFF. In \texttt{mfplain}, these  hexadecimal unicode codes are represented by a string of length $4$ or two byte numbers called charcode and charext. Thus, the code of the letter «J» can be represented in the following variants:
+Another restriction is common to both, \MF{} and \MP: Numbers are represented in fixed point arithmetic as integer multiples of $2^{-16}$ and can (normally) not be greater than $4096=2^{12}$. Unicode contains 17 planes of $2^{16}$ glyphs with a code range from 000000 to 10FFFF. In \texttt{mfplain}, these hexadecimal unicode codes are represented by a string of length $6$ or a two byte number \emph{charext} and a one byte number \emph{charcode}. Thus, the code of the letter «J» can be represented in the following variants:
 \[
-	\underbrace{74}_{\text{decimal}}\quad=\quad\underbrace{\text{"004A"}}_{\text{string}}\quad=\;\underbrace{\binom{0}{74}}_{\text{charext/charcode}}
+	\underbrace{74}_{\text{decimal}}\quad=\quad\underbrace{\text{"00004A"}}_{\text{string}}\quad=\;\underbrace{\binom{\mathrm{hex}(\text{"0000"})}{\mathrm{hex}(\text{"4A"})}}_{\text{charext/charcode}}\quad=\;\underbrace{\binom{0}{74}}_{\text{charext/charcode}}
 \]
 The \texttt{beginchar} macro in \texttt{mf2outline.mp} is redefined as follows:
 \lstset{language=MetaPost,columns=fullflexible}
