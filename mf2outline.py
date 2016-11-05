@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20161002
+#mf2outline version 20161105
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -540,9 +540,10 @@ if __name__ == "__main__":
 		dest="encoding",
 		metavar="ENC",
 		type=str,
-		default="unicode",
+		default=None,
 		help="Force the font encoding to be ENC. Natively supported " \
-		"encodings: ot1, t1, unicode. Default: unicode. The file " \
+		"encodings: OT1 (or ot1), T1 (or t1), unicode. "\
+		"Default: None (this will lead to unicode). The file " \
 		"ENC.enc will be read if it exists in the same directory as " \
 		"the source file (the encoding name inside the encoding file "\
 		"must be named ENC, too).")	
@@ -666,6 +667,7 @@ if __name__ == "__main__":
 	if args.verbose:
 		print "Importing font metrics from mf2outline.txt..."
 	font_normal_space = 300 # this is a default that has to be set but is changed probably
+	originalencoding = "none" # this will probably change
 	fontforgecommands = [] # this list may be used later
 	with open(os.path.join(tempdir,"mf2outline.txt"), "r") as metricfile:
 		# the idea is to read through the file and store the relevant
@@ -717,7 +719,10 @@ if __name__ == "__main__":
 	if args.verbose:
 		print "Setting the font encoding..."
 	if args.encoding == None:
-		args.encoding = originalencoding
+		if originalencoding == "none":
+			font.encoding = "unicode"
+		else:
+			args.encoding = originalencoding
 	if args.encoding == "Unicode" or args.encoding == "unicode":
 		font.encoding = "unicode"
 	elif args.encoding == "t1" or args.encoding == "T1": # tex cork encoding (8bit)
@@ -824,14 +829,13 @@ if __name__ == "__main__":
 			for i in range(0,len(fontforgecommands)):
 				eval(fontforgecommands[i])
 				
-	if args.encoding == "t1":
+	if font.encoding == "T1Encoding":
 		if args.veryverbose:
 			print "Adding the space character..."
 		font.encoding = "unicode" #add space for non-TeX use
 		font.createChar(32)
 		font[32].width = font_normal_space
 		font.encoding = "T1Encoding"
-		font.encoding = "compacted"
 	
 	if not args.raw:
 		if args.verbose:
@@ -906,6 +910,7 @@ if __name__ == "__main__":
 		outputname = generalname
 	for outlineformat in args.formats:
 		if outlineformat == "sfd":
+			font.encoding = "compacted"
 			font.save("%s.%s" % (outputname,outlineformat))
 		elif outlineformat == "pdf":
 			generate_pdf(font,mffile,outputname,tempdir,args)
