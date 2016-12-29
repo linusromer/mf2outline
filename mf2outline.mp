@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20161002";
+string base_name, base_version; base_name="mf2outline"; base_version="20161129";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -613,8 +613,8 @@ def beginchar(expr c,w_sharp,h_sharp,d_sharp) =
   begingroup
     charunicode:=if known c: unicode c else: "000000" fi; 
     charcode:=hex(substring(4,6) of charunicode); % this is the place inside the unicode subplane
-    charext:=hex(substring(0,4) of charunicode); % this is the number of the unicode subplane
-    % including the unicode plane (0 to 16)
+    charext:=hex(substring(0,4) of charunicode); % this is the number of the unicode plane and subplane
+    charepscode:=charcode*epsilon+charext*epsilon*256; % this is the code multiplied by epsilon=1/65536
     charwd:=w_sharp;      charht:=h_sharp;       chardp:=d_sharp;
     w:=charwd*pt; h:=charht*pt; d:=chardp*pt;
     charic:=0; clearxy; clearit; clearpen; scantokens extra_beginchar;

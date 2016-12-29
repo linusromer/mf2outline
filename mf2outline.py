@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20161105
+#mf2outline version 20161229
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -327,7 +327,7 @@ def write_t1_enc(tempdir):
 		encfile.write("/Udieresis       % 0xDC\n")
 		encfile.write("/Yacute          % 0xDD\n")
 		encfile.write("/Thorn           % 0xDE\n")
-		encfile.write("/Germandbls      % 0xDF U+1E9E\n")
+		encfile.write("/uni1E9E         % 0xDF U+1E9E\n")
 		encfile.write("/agrave          % 0xE0\n")
 		encfile.write("/aacute          % 0xE1\n")
 		encfile.write("/acircumflex     % 0xE2\n")
@@ -1092,7 +1092,9 @@ if __name__ == "__main__":
 		# apply fontforge commands
 		if len(fontforgecommands)>0:
 			for i in range(0,len(fontforgecommands)):
-				eval(fontforgecommands[i])
+				# check if it is save (i.e. if it belongs to object "font":
+				if fontforgecommands[i][:5] == ("font." or "font["):
+					exec(fontforgecommands[i])
 				
 	if font.encoding == "T1Encoding" \
 	or font.encoding == "OT1Encoding" \
