@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20161129";
+string base_name, base_version; base_name="mf2outline"; base_version="20161231";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -724,10 +724,10 @@ inner end, bye; let savedend=end; let savedbye=bye;
 def end = 
  write
  "mf2outline: font_size " & decimal designsize & char 10 &
- for fvar = "font_slant", "font_normal_space", "font_normal_shrink", 
- "font_x_height", "font_quad", "font_extra_space", 
- "font_underline_position", "font_underline_thickness", 
- "font_os_weight", "font_os_width":
+ for fvar = "font_slant", "font_normal_space", "font_normal_stretch",
+ "font_normal_shrink", "font_x_height", "font_quad", 
+ "font_extra_space", "font_underline_position", 
+ "font_underline_thickness", "font_os_weight", "font_os_width":
   if known scantokens (fvar & "_"):
    "mf2outline: " & fvar & " " &
    scantokens ("decimal " & fvar & "_") & char 10 &

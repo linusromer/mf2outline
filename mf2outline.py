@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20161229
+#mf2outline version 20170102
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -327,7 +327,7 @@ def write_t1_enc(tempdir):
 		encfile.write("/Udieresis       % 0xDC\n")
 		encfile.write("/Yacute          % 0xDD\n")
 		encfile.write("/Thorn           % 0xDE\n")
-		encfile.write("/uni1E9E         % 0xDF U+1E9E\n")
+		encfile.write("/Germandbls      % 0xDF U+1E9E\n")
 		encfile.write("/agrave          % 0xE0\n")
 		encfile.write("/aacute          % 0xE1\n")
 		encfile.write("/acircumflex     % 0xE2\n")
@@ -494,267 +494,6 @@ def write_ot1_enc(tempdir):
 		encfile.write("/tilde           % 0x7E U+02DC\n")
 		encfile.write("/dieresis        % 0x7F U+00A8\n")
 		encfile.write("] def")
-		
-def write_lgr_enc(tempdir):
-	with open(os.path.join(tempdir, "lgr.enc"), "w") as encfile:
-		encfile.write("/LGREncoding [\n")
-		encfile.write("/endash \n")
-		encfile.write("/uni032F \n")
-		encfile.write("/u10144 \n")
-		encfile.write("/u10145 \n")
-		encfile.write("/u10146 \n")
-		encfile.write("/u10147 \n")
-		encfile.write("/uni03DB \n")
-		encfile.write("/uniE009 \n")
-		encfile.write("/uni1FBE \n")
-		encfile.write("/uni1FBC \n")
-		encfile.write("/uni1FCC \n")
-		encfile.write("/uni1FFC \n")
-		encfile.write("/uniE00A \n")
-		encfile.write("/uniE00B \n")
-		encfile.write("/uniE00C \n")
-		encfile.write("/uniE00D \n")
-		encfile.write("/uni02CF \n")
-		encfile.write("/uni02CE \n")
-		encfile.write("/uni03DF \n")
-		encfile.write("/uni03D9 \n")
-		encfile.write("/uni032E \n")
-		encfile.write("/uni03D8 \n")
-		encfile.write("/uniE00E \n")
-		encfile.write("/uni03E0 \n")
-		encfile.write("/Euro \n")
-		encfile.write("/perthousand \n")
-		encfile.write("/uni0259 \n")
-		encfile.write("/uni03E1 \n")
-		encfile.write("/quoteleft \n")
-		encfile.write("/quoteright \n")
-		encfile.write("/breve \n")
-		encfile.write("/macron \n")
-		encfile.write("/uni1FC1 \n")
-		encfile.write("/exclam \n")
-		encfile.write("/dieresis \n")
-		encfile.write("/dieresistonos \n")
-		encfile.write("/uni1FED \n")
-		encfile.write("/percent \n")
-		encfile.write("/periodcentered \n")
-		encfile.write("/tonos \n")
-		encfile.write("/parenleft \n")
-		encfile.write("/parenright \n")
-		encfile.write("/asterisk \n")
-		encfile.write("/plus \n")
-		encfile.write("/comma \n")
-		encfile.write("/hyphen \n")
-		encfile.write("/period \n")
-		encfile.write("/slash \n")
-		encfile.write("/zero \n")
-		encfile.write("/one \n")
-		encfile.write("/two \n")
-		encfile.write("/three \n")
-		encfile.write("/four \n")
-		encfile.write("/five \n")
-		encfile.write("/six \n")
-		encfile.write("/seven \n")
-		encfile.write("/eight \n")
-		encfile.write("/nine \n")
-		encfile.write("/colon \n")
-		encfile.write("/anoteleia \n")
-		encfile.write("/uni1FFE \n")
-		encfile.write("/equal \n")
-		encfile.write("/uni1FBF \n")
-		encfile.write("/semicolon \n")
-		encfile.write("/uni1FDF \n")
-		encfile.write("/Alpha \n")
-		encfile.write("/Beta \n")
-		encfile.write("/uni1FDD \n")
-		encfile.write("/uni0394 \n")
-		encfile.write("/Epsilon \n")
-		encfile.write("/Phi \n")
-		encfile.write("/Gamma \n")
-		encfile.write("/Eta \n")
-		encfile.write("/Iota \n")
-		encfile.write("/Theta \n")
-		encfile.write("/Kappa \n")
-		encfile.write("/Lambda \n")
-		encfile.write("/Mu \n")
-		encfile.write("/Nu \n")
-		encfile.write("/Omicron \n")
-		encfile.write("/Pi \n")
-		encfile.write("/Chi \n")
-		encfile.write("/Rho \n")
-		encfile.write("/Sigma \n")
-		encfile.write("/Tau \n")
-		encfile.write("/Upsilon \n")
-		encfile.write("/uni1FDE \n")
-		encfile.write("/uni03A9 \n")
-		encfile.write("/Xi \n")
-		encfile.write("/Psi \n")
-		encfile.write("/Zeta \n")
-		encfile.write("/bracketleft \n")
-		encfile.write("/uni1FCF \n")
-		encfile.write("/bracketright \n")
-		encfile.write("/uni1FCE \n")
-		encfile.write("/uni1FCD \n")
-		encfile.write("/uni1FEF \n")
-		encfile.write("/alpha \n")
-		encfile.write("/beta \n")
-		encfile.write("/sigma1  \n")
-		encfile.write("/delta \n")
-		encfile.write("/epsilon \n")
-		encfile.write("/phi \n")
-		encfile.write("/gamma \n")
-		encfile.write("/eta \n")
-		encfile.write("/iota \n")
-		encfile.write("/theta \n")
-		encfile.write("/kappa \n")
-		encfile.write("/lambda \n")
-		encfile.write("/uni03BC \n")
-		encfile.write("/nu \n")
-		encfile.write("/omicron \n")
-		encfile.write("/pi \n")
-		encfile.write("/chi \n")
-		encfile.write("/rho \n")
-		encfile.write("/sigma \n")
-		encfile.write("/tau \n")
-		encfile.write("/upsilon \n")
-		encfile.write("/uni200C \n")
-		encfile.write("/omega \n")
-		encfile.write("/xi \n")
-		encfile.write("/psi \n")
-		encfile.write("/zeta \n")
-		encfile.write("/guillemotleft \n")
-		encfile.write("/uni037A \n")
-		encfile.write("/guillemotright \n")
-		encfile.write("/uni1FC0 \n")
-		encfile.write("/emdash \n")
-		encfile.write("/uni1F70 \n")
-		encfile.write("/uni1F01 \n")
-		encfile.write("/uni1F00 \n")
-		encfile.write("/uni1F03 \n")
-		encfile.write("/uni1FB2 \n")
-		encfile.write("/uni1F81 \n")
-		encfile.write("/uni1F80 \n")
-		encfile.write("/uni1F83 \n")
-		encfile.write("/alphatonos \n")
-		encfile.write("/uni1F05 \n")
-		encfile.write("/uni1F04 \n")
-		encfile.write("/uni1F02 \n")
-		encfile.write("/uni1FB4 \n")
-		encfile.write("/uni1F85 \n")
-		encfile.write("/uni1F84 \n")
-		encfile.write("/uni1F82 \n")
-		encfile.write("/uni1FB6 \n")
-		encfile.write("/uni1F07 \n")
-		encfile.write("/uni1F06 \n")
-		encfile.write("/uni03DD \n")
-		encfile.write("/uni1FB7 \n")
-		encfile.write("/uni1F87 \n")
-		encfile.write("/uni1F86 \n")
-		encfile.write("/uniE00F \n")
-		encfile.write("/uni1F74 \n")
-		encfile.write("/uni1F21 \n")
-		encfile.write("/uni1F20 \n")
-		encfile.write("/.notdef \n")
-		encfile.write("/uni1FC2 \n")
-		encfile.write("/uni1F91 \n")
-		encfile.write("/uni1F90 \n")
-		encfile.write("/.notdef \n")
-		encfile.write("/etatonos \n")
-		encfile.write("/uni1F25 \n")
-		encfile.write("/uni1F24 \n")
-		encfile.write("/uni1F23 \n")
-		encfile.write("/uni1FC4 \n")
-		encfile.write("/uni1F95 \n")
-		encfile.write("/uni1F94 \n")
-		encfile.write("/uni1F93 \n")
-		encfile.write("/uni1FC6 \n")
-		encfile.write("/uni1F27 \n")
-		encfile.write("/uni1F26 \n")
-		encfile.write("/uni1F22 \n")
-		encfile.write("/uni1FC7 \n")
-		encfile.write("/uni1F97 \n")
-		encfile.write("/uni1F96 \n")
-		encfile.write("/uni1F92 \n")
-		encfile.write("/uni1F7C \n")
-		encfile.write("/uni1F61 \n")
-		encfile.write("/uni1F60 \n")
-		encfile.write("/uni1F63 \n")
-		encfile.write("/uni1FF2 \n")
-		encfile.write("/uni1FA1 \n")
-		encfile.write("/uni1FA0 \n")
-		encfile.write("/uni1FA3 \n")
-		encfile.write("/omegatonos \n")
-		encfile.write("/uni1F65 \n")
-		encfile.write("/uni1F64 \n")
-		encfile.write("/uni1F62 \n")
-		encfile.write("/uni1FF4 \n")
-		encfile.write("/uni1FA5 \n")
-		encfile.write("/uni1FA4 \n")
-		encfile.write("/uni1FA2 \n")
-		encfile.write("/uni1FF6 \n")
-		encfile.write("/uni1F67 \n")
-		encfile.write("/uni1F66 \n")
-		encfile.write("/uni03DC  \n")
-		encfile.write("/uni1FF7 \n")
-		encfile.write("/uni1FA7 \n")
-		encfile.write("/uni1FA6 \n")
-		encfile.write("/.notdef \n")
-		encfile.write("/uni1F76 \n")
-		encfile.write("/uni1F31 \n")
-		encfile.write("/uni1F30 \n")
-		encfile.write("/uni1F33 \n")
-		encfile.write("/uni1F7A \n")
-		encfile.write("/uni1F51 \n")
-		encfile.write("/uni1F50 \n")
-		encfile.write("/uni1F53 \n")
-		encfile.write("/iotatonos \n")
-		encfile.write("/uni1F35 \n")
-		encfile.write("/uni1F34 \n")
-		encfile.write("/uni1F32 \n")
-		encfile.write("/upsilontonos \n")
-		encfile.write("/uni1F55 \n")
-		encfile.write("/uni1F54 \n")
-		encfile.write("/uni1F52 \n")
-		encfile.write("/uni1FD6 \n")
-		encfile.write("/uni1F37 \n")
-		encfile.write("/uni1F36 \n")
-		encfile.write("/Iotadieresis \n")
-		encfile.write("/uni1FE6 \n")
-		encfile.write("/uni1F57 \n")
-		encfile.write("/uni1F56 \n")
-		encfile.write("/Upsilondieresis \n")
-		encfile.write("/uni1F72 \n")
-		encfile.write("/uni1F11 \n")
-		encfile.write("/uni1F10 \n")
-		encfile.write("/uni1F13 \n")
-		encfile.write("/uni1F78 \n")
-		encfile.write("/uni1F41 \n")
-		encfile.write("/uni1F40 \n")
-		encfile.write("/uni1F43 \n")
-		encfile.write("/epsilontonos \n")
-		encfile.write("/uni1F15 \n")
-		encfile.write("/uni1F14 \n")
-		encfile.write("/uni1F12 \n")
-		encfile.write("/omicrontonos \n")
-		encfile.write("/uni1F45 \n")
-		encfile.write("/uni1F44 \n")
-		encfile.write("/uni1F42 \n")
-		encfile.write("/iotadieresis \n")
-		encfile.write("/uni1FD2 \n")
-		encfile.write("/iotadieresistonos \n")
-		encfile.write("/uni1FD7 \n")
-		encfile.write("/upsilondieresis \n")
-		encfile.write("/uni1FE2 \n")
-		encfile.write("/upsilondieresistonos \n")
-		encfile.write("/uni1FE7 \n")
-		encfile.write("/uni1FB3 \n")
-		encfile.write("/uni1FC3 \n")
-		encfile.write("/uni1FF3 \n")
-		encfile.write("/uni1FE5 \n")
-		encfile.write("/uni1FE4 \n")
-		encfile.write("/.notdef \n")
-		encfile.write("/uni0374 \n")
-		encfile.write("/uni0375 \n")
-		encfile.write("] def")
 
 if __name__ == "__main__":			
 	parser = argparse.ArgumentParser(description="Generate outline fonts from Metafont sources.")
@@ -801,10 +540,9 @@ if __name__ == "__main__":
 		dest="encoding",
 		metavar="ENC",
 		type=str,
-		default=None,
+		default="unicode",
 		help="Force the font encoding to be ENC. Natively supported " \
-		"encodings: OT1 (or ot1), T1 (or t1), unicode. "\
-		"Default: None (this will lead to unicode). The file " \
+		"encodings: ot1, t1, unicode. Default: unicode. The file " \
 		"ENC.enc will be read if it exists in the same directory as " \
 		"the source file (the encoding name inside the encoding file "\
 		"must be named ENC, too).")	
@@ -928,7 +666,6 @@ if __name__ == "__main__":
 	if args.verbose:
 		print "Importing font metrics from mf2outline.txt..."
 	font_normal_space = 300 # this is a default that has to be set but is changed probably
-	originalencoding = "none" # this will probably change
 	fontforgecommands = [] # this list may be used later
 	with open(os.path.join(tempdir,"mf2outline.txt"), "r") as metricfile:
 		# the idea is to read through the file and store the relevant
@@ -980,10 +717,7 @@ if __name__ == "__main__":
 	if args.verbose:
 		print "Setting the font encoding..."
 	if args.encoding == None:
-		if originalencoding == "none":
-			font.encoding = "unicode"
-		else:
-			args.encoding = originalencoding
+		args.encoding = originalencoding
 	if args.encoding == "Unicode" or args.encoding == "unicode":
 		font.encoding = "unicode"
 	elif args.encoding == "t1" or args.encoding == "T1": # tex cork encoding (8bit)
@@ -994,10 +728,6 @@ if __name__ == "__main__":
 		write_ot1_enc(tempdir)
 		fontforge.loadEncodingFile(os.path.join(tempdir, "ot1.enc"))
 		font.encoding = "OT1Encoding"
-	elif args.encoding == "lgr" or args.encoding == "LGR": # Greek encoding (8bit)
-		write_lgr_enc(tempdir)
-		fontforge.loadEncodingFile(os.path.join(tempdir, "lgr.enc"))
-		font.encoding = "LGREncoding"
 	elif os.path.isfile(os.path.join(os.path.split(os.path.abspath("%s" % args.mfsource))[0],"%s.enc" %args.encoding)):
 		fontforge.loadEncodingFile(os.path.join(os.path.split(os.path.abspath("%s" % args.mfsource))[0],"%s.enc" %args.encoding))
 		font.encoding = args.encoding
@@ -1092,20 +822,16 @@ if __name__ == "__main__":
 		# apply fontforge commands
 		if len(fontforgecommands)>0:
 			for i in range(0,len(fontforgecommands)):
-				# check if it is save (i.e. if it belongs to object "font":
-				if fontforgecommands[i][:5] == ("font." or "font["):
-					exec(fontforgecommands[i])
+				eval(fontforgecommands[i])
 				
-	if font.encoding == "T1Encoding" \
-	or font.encoding == "OT1Encoding" \
-	or font.encoding == "LGREncoding":
+	if args.encoding == "t1":
 		if args.veryverbose:
 			print "Adding the space character..."
-		currentencoding = font.encoding
 		font.encoding = "unicode" #add space for non-TeX use
 		font.createChar(32)
 		font[32].width = font_normal_space
-		font.encoding = currentencoding
+		font.encoding = "T1Encoding"
+		font.encoding = "compacted"
 	
 	if not args.raw:
 		if args.verbose:
@@ -1127,6 +853,9 @@ if __name__ == "__main__":
 		elif args.ffscript == "": # no user defined script
 			font.selection.all()
 			if args.veryverbose:
+				print "Simplifying"
+			font.simplify()
+			if args.veryverbose:
 				print "Rounding to 1/100 unit"
 			font.round(100)
 			if args.veryverbose:
@@ -1136,8 +865,8 @@ if __name__ == "__main__":
 				print "Correcting directions"
 			font.correctDirection()
 			if args.veryverbose:
-				print "Rounding to 1/100 unit"
-			font.round(100) # otherwise, extrema may be ugly
+				print "Rounding"
+			font.round() # otherwise, extrema may be ugly
 			if args.veryverbose:
 				print "Adding extrema"
 			font.addExtrema()
@@ -1177,12 +906,9 @@ if __name__ == "__main__":
 		outputname = generalname
 	for outlineformat in args.formats:
 		if outlineformat == "sfd":
-			font.encoding = "compacted"
 			font.save("%s.%s" % (outputname,outlineformat))
 		elif outlineformat == "pdf":
 			generate_pdf(font,mffile,outputname,tempdir,args)
-		elif outlineformat == "tfm":
-			shutil.copyfile("%s/%s.tfm" % (tempdir,outputname), "./%s.tfm" % outputname)
 		else:
 			font.generate("%s.%s" % (outputname,outlineformat))
 	
