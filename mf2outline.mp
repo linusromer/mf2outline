@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20161231";
+string base_name, base_version; base_name="mf2outline"; base_version="20170103";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -687,6 +687,12 @@ def font_copyright expr x = font_copyright_:=x enddef;
 def font_name expr x = font_name_:=x enddef;
 def font_fullname expr x = font_fullname_:=x enddef;
 def font_familyname expr x = font_familyname_:=x enddef;
+numeric font_range_[]; % font size feature (lower,upper,style number)
+def font_range(expr lower,upper,style) = 
+ font_range_[1]:=lower;
+ font_range_[2]:=upper;
+ font_range_[3]:=style;
+enddef;
 string font_identifier_, font_coding_scheme_, 
  font_name_, font_fullname_, font_familyname_,
  font_copyright_, font_version_;
@@ -733,6 +739,11 @@ def end =
    scantokens ("decimal " & fvar & "_") & char 10 &
   fi
  endfor
+ if known font_range_[1]:
+  "mf2outline: font_range " & decimal(font_range_[1]) 
+   & " " & decimal(font_range_[2]) 
+   & " " & decimal(font_range_[3]) & char 10 &
+ fi
  for fvar = "font_identifier", "font_coding_scheme", "font_version",
   "font_copyright", "font_version", "font_name", "font_fullname", 
   "font_familyname":

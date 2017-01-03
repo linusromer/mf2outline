@@ -706,9 +706,9 @@ if __name__ == "__main__":
 						font_os2_weight = int(words[2])
 					elif words[1] == "font_os_width" and len(words) > 1:
 						font_os2_width = int(words[2])
-					# the following tex information cannot be set in the font, 
-					# as fontforge does not yet support the setting of 
-					# texparameters (only access) but we still read them
+					elif words[1] == "font_range" and len(words) > 1:
+						font_range = [float(words[2]),float(words[3]),int(words[4])]
+					# texparameters:
 					elif words[1] == "font_normal_space" and len(words) > 1:
 						font_normal_space = float(words[2]) *1000 / args.designsize
 					elif words[1] == "font_normal_stretch" and len(words) > 1:
@@ -831,6 +831,9 @@ if __name__ == "__main__":
 		font.os2_weight = args.width
 	# setting the font comment
 	font.comment = "Created with mf2outline."
+	#setting the font range
+	font.size_feature = (args.designsize,font_range[0],\
+	font_range[1],font_range[2],(('English (US)','Regular'),))
 
 	if args.verbose:
 		print "Importing glyphs and adding glyph metrics..."
