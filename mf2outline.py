@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20170102
+#mf2outline version 20170103
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -327,7 +327,7 @@ def write_t1_enc(tempdir):
 		encfile.write("/Udieresis       % 0xDC\n")
 		encfile.write("/Yacute          % 0xDD\n")
 		encfile.write("/Thorn           % 0xDE\n")
-		encfile.write("/Germandbls      % 0xDF U+1E9E\n")
+		encfile.write("/uni1E9E         % 0xDF U+1E9E\n")
 		encfile.write("/agrave          % 0xE0\n")
 		encfile.write("/aacute          % 0xE1\n")
 		encfile.write("/acircumflex     % 0xE2\n")
@@ -494,7 +494,7 @@ def write_ot1_enc(tempdir):
 		encfile.write("/tilde           % 0x7E U+02DC\n")
 		encfile.write("/dieresis        % 0x7F U+00A8\n")
 		encfile.write("] def")
-
+		
 if __name__ == "__main__":			
 	parser = argparse.ArgumentParser(description="Generate outline fonts from Metafont sources.")
 	parser.add_argument("mfsource", help="The file name of the Metafont source file")
@@ -540,9 +540,10 @@ if __name__ == "__main__":
 		dest="encoding",
 		metavar="ENC",
 		type=str,
-		default="unicode",
+		default=None,
 		help="Force the font encoding to be ENC. Natively supported " \
-		"encodings: ot1, t1, unicode. Default: unicode. The file " \
+		"encodings: OT1 (or ot1), T1 (or t1), unicode. "\
+		"Default: None (this will lead to unicode). The file " \
 		"ENC.enc will be read if it exists in the same directory as " \
 		"the source file (the encoding name inside the encoding file "\
 		"must be named ENC, too).")	
@@ -665,7 +666,14 @@ if __name__ == "__main__":
 	
 	if args.verbose:
 		print "Importing font metrics from mf2outline.txt..."
-	font_normal_space = 300 # this is a default that has to be set but is changed probably
+	font_slant = 0 # this is a default (will change probably later)
+	font_normal_space = 333 # this is a default (will change probably later)
+	font_normal_stretch = 167 # this is a default (will change probably later)
+	font_normal_shrink = 111 # this is a default (will change probably later)
+	font_x_height = 430 # this is a default (will change probably later)
+	font_quad = 1000 # this is a default (will change probably later)
+	font_extra_space = 111 # this is a default (will change probably later)
+	originalencoding = "none" # this will probably change
 	fontforgecommands = [] # this list may be used later
 	with open(os.path.join(tempdir,"mf2outline.txt"), "r") as metricfile:
 		# the idea is to read through the file and store the relevant
@@ -680,7 +688,8 @@ if __name__ == "__main__":
 					if words[1] == "eof": # end of file
 						break
 					elif words[1] == "font_slant" and len(words) > 1: # the slant of the font
-						font.italicangle = -math.degrees(math.atan(float(words[2])))
+						font_slant = float(words[2])
+						font.italicangle = -math.degrees(math.atan(font_slant))
 					elif words[1] == "font_version" and len(words) > 1:
 						font.version = " ".join(words[2:])
 					elif words[1] == "font_copyright" and len(words) > 1: 
@@ -701,11 +710,17 @@ if __name__ == "__main__":
 					# as fontforge does not yet support the setting of 
 					# texparameters (only access) but we still read them
 					elif words[1] == "font_normal_space" and len(words) > 1:
-						font_normal_space = round(float(words[2]) *1000 / args.designsize)
+						font_normal_space = float(words[2]) *1000 / args.designsize
+					elif words[1] == "font_normal_stretch" and len(words) > 1:
+						font_normal_stretch = float(words[2]) *1000 / args.designsize
+					elif words[1] == "font_normal_shrink" and len(words) > 1:
+						font_normal_shrink = float(words[2]) *1000 / args.designsize
 					elif words[1] == "font_x_height" and len(words) > 1:
-						font_x_height = round(float(words[2]) *1000 / args.designsize)
+						font_x_height = float(words[2]) *1000 / args.designsize
 					elif words[1] == "font_quad" and len(words) > 1:
-						font_quad = round(float(words[2]) *1000 / args.designsize)
+						font_quad = float(words[2]) *1000 / args.designsize
+					elif words[1] == "font_extra_space" and len(words) > 1:
+						font_extra_space = float(words[2]) *1000 / args.designsize
 					elif words[1] == "fontforge":
 						currentlistname = "fontforgecommands"
 			elif not currentlistname == "none": # if there is something to write to...
@@ -713,11 +728,43 @@ if __name__ == "__main__":
 					vars()[currentlistname].append(line.rstrip('\n'))
 				# else: there may be other lists in future...
 					#vars()[currentlistname].append(line.split())
+	
+	# since font.texparameters is not writeable, we have to
+	# insert TeX-data directly into the sfd-file:
+	# this is only implemented for text fonts (not for math or ext fonts)
+	# if "tfm" in args.formats:
+	if "tfm" in args.formats:
+		if args.verbose:
+			print "Writing some special TeX parameters..."
+		font.save("%s/temp.sfd" % tempdir)
+		with open("%s/temp.sfd" % tempdir, 'r') as fin:
+			lines=fin.readlines()
+			with open("%s/temp2.sfd" % tempdir, 'w') as fout:
+				for line in lines:
+					fout.write(line)
+					fout.write("\n")
+					# Now instert after "FitToEm:"
+					if line[:8] == "FitToEm:":
+						fout.write("TeXData: 1 ")
+						fout.write(str(int(args.designsize*(1<<20)))+" ")
+						fout.write(str(int(font_slant/args.designsize*.01*(1<<20)))+" ")
+						fout.write(str(int(font_normal_space/args.designsize*.01*(1<<20)))+" ")
+						fout.write(str(int(font_normal_stretch/args.designsize*.01*(1<<20)))+" ")
+						fout.write(str(int(font_normal_shrink/args.designsize*.01*(1<<20)))+" ")
+						fout.write(str(int(font_x_height/args.designsize*.01*(1<<20)))+" ")
+						fout.write(str(int(font_quad/args.designsize*.01*(1<<20)))+" ")
+						fout.write(str(int(font_extra_space/args.designsize*.01*(1<<20)))+" ")
+						fout.write("0 0 0 0 0 0 0 0 0 0 0 0 0 0 0")
+						fout.write("\n\n")
+		font=fontforge.open("%s/temp2.sfd" % tempdir)
 
 	if args.verbose:
 		print "Setting the font encoding..."
 	if args.encoding == None:
-		args.encoding = originalencoding
+		if originalencoding == "none":
+			font.encoding = "unicode"
+		else:
+			args.encoding = originalencoding
 	if args.encoding == "Unicode" or args.encoding == "unicode":
 		font.encoding = "unicode"
 	elif args.encoding == "t1" or args.encoding == "T1": # tex cork encoding (8bit)
@@ -809,8 +856,8 @@ if __name__ == "__main__":
 							glyph.texdepth = round(float(words[3]) *1000 / args.designsize)
 						elif words[2] == "charic": # the italic correction of the current char
 							glyph.italicCorrection = round(float(words[3]) *1000 / args.designsize)	
-	generalname = os.path.splitext(os.path.basename(args.mfsource))[0]	
 	
+	generalname = os.path.splitext(os.path.basename(args.mfsource))[0]	
 	if not args.preview: # preview does not need ligatures, kernings etc.
 		if args.verbose:
 			print "Processing font metrics"
@@ -822,16 +869,19 @@ if __name__ == "__main__":
 		# apply fontforge commands
 		if len(fontforgecommands)>0:
 			for i in range(0,len(fontforgecommands)):
-				eval(fontforgecommands[i])
+				# check if it is save (i.e. if it belongs to object "font":
+				if fontforgecommands[i][:5] == ("font." or "font["):
+					exec(fontforgecommands[i])
 				
-	if args.encoding == "t1":
+	if font.encoding == "T1Encoding" \
+	or font.encoding == "OT1Encoding":
 		if args.veryverbose:
 			print "Adding the space character..."
+		currentencoding = font.encoding
 		font.encoding = "unicode" #add space for non-TeX use
 		font.createChar(32)
 		font[32].width = font_normal_space
-		font.encoding = "T1Encoding"
-		font.encoding = "compacted"
+		font.encoding = currentencoding
 	
 	if not args.raw:
 		if args.verbose:
@@ -853,9 +903,6 @@ if __name__ == "__main__":
 		elif args.ffscript == "": # no user defined script
 			font.selection.all()
 			if args.veryverbose:
-				print "Simplifying"
-			font.simplify()
-			if args.veryverbose:
 				print "Rounding to 1/100 unit"
 			font.round(100)
 			if args.veryverbose:
@@ -865,8 +912,8 @@ if __name__ == "__main__":
 				print "Correcting directions"
 			font.correctDirection()
 			if args.veryverbose:
-				print "Rounding"
-			font.round() # otherwise, extrema may be ugly
+				print "Rounding to 1/100 unit"
+			font.round(100) # otherwise, extrema may be ugly
 			if args.veryverbose:
 				print "Adding extrema"
 			font.addExtrema()
@@ -906,9 +953,12 @@ if __name__ == "__main__":
 		outputname = generalname
 	for outlineformat in args.formats:
 		if outlineformat == "sfd":
+			font.encoding = "compacted"
 			font.save("%s.%s" % (outputname,outlineformat))
 		elif outlineformat == "pdf":
 			generate_pdf(font,mffile,outputname,tempdir,args)
+		elif outlineformat == "tfm":
+			shutil.copyfile("%s/%s.tfm" % (tempdir,outputname), "./%s.tfm" % outputname)
 		else:
 			font.generate("%s.%s" % (outputname,outlineformat))
 	
