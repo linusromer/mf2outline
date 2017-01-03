@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20161002prev";
+string base_name, base_version; base_name="mf2outline"; base_version="20170103prev";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -613,8 +613,8 @@ def beginchar(expr c,w_sharp,h_sharp,d_sharp) =
   begingroup
     charunicode:=if known c: unicode c else: "000000" fi; 
     charcode:=hex(substring(4,6) of charunicode); % this is the place inside the unicode subplane
-    charext:=hex(substring(0,4) of charunicode); % this is the number of the unicode subplane
-    % including the unicode plane (0 to 16)
+    charext:=hex(substring(0,4) of charunicode); % this is the number of the unicode plane and subplane
+    charepscode:=charcode*epsilon+charext*epsilon*256; % this is the code multiplied by epsilon=1/65536
     charwd:=w_sharp;      charht:=h_sharp;       chardp:=d_sharp;
     w:=charwd*pt; h:=charht*pt; d:=chardp*pt;
     charic:=0; clearxy; clearit; clearpen; scantokens extra_beginchar;
@@ -687,6 +687,12 @@ def font_copyright expr x = font_copyright_:=x enddef;
 def font_name expr x = font_name_:=x enddef;
 def font_fullname expr x = font_fullname_:=x enddef;
 def font_familyname expr x = font_familyname_:=x enddef;
+numeric font_range_[]; % font size feature (lower,upper,style number)
+def font_range(expr lower,upper,style) = 
+ font_range_[1]:=lower;
+ font_range_[2]:=upper;
+ font_range_[3]:=style;
+enddef;
 string font_identifier_, font_coding_scheme_, 
  font_name_, font_fullname_, font_familyname_,
  font_copyright_, font_version_;
@@ -724,15 +730,20 @@ inner end, bye; let savedend=end; let savedbye=bye;
 def end = 
  write
  "mf2outline: font_size " & decimal designsize & char 10 &
- for fvar = "font_slant", "font_normal_space", "font_normal_shrink", 
- "font_x_height", "font_quad", "font_extra_space", 
- "font_underline_position", "font_underline_thickness", 
- "font_os_weight", "font_os_width":
+ for fvar = "font_slant", "font_normal_space", "font_normal_stretch",
+ "font_normal_shrink", "font_x_height", "font_quad", 
+ "font_extra_space", "font_underline_position", 
+ "font_underline_thickness", "font_os_weight", "font_os_width":
   if known scantokens (fvar & "_"):
    "mf2outline: " & fvar & " " &
    scantokens ("decimal " & fvar & "_") & char 10 &
   fi
  endfor
+ if known font_range_[1]:
+  "mf2outline: font_range " & decimal(font_range_[1]) 
+   & " " & decimal(font_range_[2]) 
+   & " " & decimal(font_range_[3]) & char 10 &
+ fi
  for fvar = "font_identifier", "font_coding_scheme", "font_version",
   "font_copyright", "font_version", "font_name", "font_fullname", 
   "font_familyname":

@@ -673,13 +673,14 @@ if __name__ == "__main__":
 	font_x_height = 430 # this is a default (will change probably later)
 	font_quad = 1000 # this is a default (will change probably later)
 	font_extra_space = 111 # this is a default (will change probably later)
-	originalencoding = "none" # this will probably change
+	font_range = None 
+	originalencoding = None # this will probably change
 	fontforgecommands = [] # this list may be used later
 	with open(os.path.join(tempdir,"mf2outline.txt"), "r") as metricfile:
 		# the idea is to read through the file and store the relevant
 		# information in variables or in the fontforgecommands list,
 		# which will be processed later
-		currentlistname = "none" # yet there is no list to write information to...
+		currentlistname = None # yet there is no list to write information to...
 		for line in metricfile:
 			if line[:11] == "mf2outline:": # look for special words inside the glyphs eps
 				words = line.split()
@@ -723,7 +724,7 @@ if __name__ == "__main__":
 						font_extra_space = float(words[2]) *1000 / args.designsize
 					elif words[1] == "fontforge":
 						currentlistname = "fontforgecommands"
-			elif not currentlistname == "none": # if there is something to write to...
+			elif currentlistname !=  None: # if there is something to write to...
 				if (currentlistname == "fontforgecommands"):
 					vars()[currentlistname].append(line.rstrip('\n'))
 				# else: there may be other lists in future...
@@ -761,7 +762,7 @@ if __name__ == "__main__":
 	if args.verbose:
 		print "Setting the font encoding..."
 	if args.encoding == None:
-		if originalencoding == "none":
+		if originalencoding == None:
 			font.encoding = "unicode"
 		else:
 			args.encoding = originalencoding
@@ -832,8 +833,9 @@ if __name__ == "__main__":
 	# setting the font comment
 	font.comment = "Created with mf2outline."
 	#setting the font range
-	font.size_feature = (args.designsize,font_range[0],\
-	font_range[1],font_range[2],(('English (US)','Regular'),))
+	if font_range != None:
+		font.size_feature = (args.designsize,font_range[0],\
+		font_range[1],font_range[2],(('English (US)','Regular'),))
 
 	if args.verbose:
 		print "Importing glyphs and adding glyph metrics..."
