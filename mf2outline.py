@@ -664,6 +664,11 @@ if __name__ == "__main__":
 				print "The correct designsize is %s, hence I have to run METAPOST again..." % font.design_size
 			run_metapost(mffile,font.design_size,workdir,tempdir,args)
 	
+	if args.veryverbose:
+		f = open('%s/mf2outline.txt' % tempdir,"r")
+		print f.read()
+		f.close()
+	
 	if args.verbose:
 		print "Importing font metrics from mf2outline.txt..."
 	font_slant = 0 # this is a default (will change probably later)
@@ -734,7 +739,7 @@ if __name__ == "__main__":
 	# insert TeX-data directly into the sfd-file:
 	# this is only implemented for text fonts (not for math or ext fonts)
 	# if "tfm" in args.formats:
-	if "tfm" in args.formats:
+	if "tfm" or "sfd" in args.formats:
 		if args.verbose:
 			print "Writing some special TeX parameters..."
 		font.save("%s/temp.sfd" % tempdir)
@@ -966,11 +971,6 @@ if __name__ == "__main__":
 			shutil.copyfile("%s/%s.tfm" % (tempdir,outputname), "./%s.tfm" % outputname)
 		else:
 			font.generate("%s.%s" % (outputname,outlineformat))
-	
-	#print os.listdir(tempdir)
-	#f = open('%s/mf2outline.txt' % tempdir,"r")
-	#print f.read()
-	#f.close()
 	
 	shutil.rmtree(tempdir)
 	
