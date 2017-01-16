@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20170103prev";
+string base_name, base_version; base_name="mf2outline"; base_version="20170116prev";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -635,8 +635,15 @@ def endchar =
   endgroup
 enddef;
 
-string fontforgecommands_[]; % list of fontforge command
+string fontforgecommands_[], % list of fontforge command
+ kernclassesl_[][], % list of left kerning classes
+ kernclassesr_[][], % list of right kerning classes
+ ligatures_[][]; % list of ligatures
+numeric kernmatrix_[][]; % matrix with kerning entries
 fontforgecommands_[0]="0"; % number of commands (will be increased)
+kernclassesl_[0][0]="0"; % number of kernclassesl (will be increased)
+kernclassesr_[0][0]="0"; % number of kernclassesr (will be increased)
+ligatures_[0][0]="0"; % number of ligatures (will be increased)
 
 % store a fontforge command into fontforgecommands_[]
 def fontforge(expr command) = 
@@ -648,6 +655,94 @@ def fontforge(expr command) =
   fontforgecommands_[i]:=command;
  endgroup
 enddef;
+
+% add a left kerning class to kernclassesl
+% a is a comma separated list of codes, like addkernclassl(86,87,"c","4A","00004B");
+% the codes may be numbers, ASCII letters or unicode strings
+% but they are always stored as unicode strings
+% the lengths of the array is stored as hexadecimal strings
+def addkernclassl(text a) = 
+ begingroup
+  save i,l;
+  numeric i,l;
+  l:=hex(kernclassesl_[0][0])+1;
+  kernclassesl_[0][0]:=hexadecimal l;
+  i:=0; % number of chars in current class
+  for b=a:
+   i:=i+1;
+   kernclassesl_[l][i]:=unicode b;
+  endfor
+  % number of chars in current class is stored at 0th position
+  kernclassesl_[l][0]:=hexadecimal i; 
+ endgroup
+enddef;
+
+% add a right kerning class to kernclassesr
+% a is a comma separated list of codes, addkernclassr(86,87,"c","4A","00004B");
+def addkernclassr(text a) = 
+ begingroup
+  save i,l;
+  numeric i,l;
+  l:=hex(kernclassesr_[0][0])+1;
+  kernclassesr_[0][0]:=hexadecimal l;
+  i:=0; % number of chars in current class
+  for b=a:
+   i:=i+1;
+   kernclassesr_[l][i]:=unicode b;
+  endfor
+  % number of chars in current class is stored at 0th position
+  kernclassesr_[l][0]:=hexadecimal i; 
+ endgroup
+enddef;
+
+% kern all chars of left class and right class by kvalue
+% identification is done by the first code of the class
+def addclasskern(expr left,right,kvalue) = 
+ begingroup
+  save i,j;
+  numeric i,j;
+  % get the indices i and j of the two classes:
+  i:=0; % default value (cannot be true)
+  j:=0; % default value (cannot be true)
+  forever:
+   i:=i+1;
+   exitif kernclassesl_[i][1]=unicode(left);
+   if i=hex(kernclassesl_[0][0]):
+    errmessage("unknown left kerning class");
+   fi
+  endfor
+  forever:
+   j:=j+1;
+   exitif kernclassesr_[j][1]=unicode(right);
+   if j=hex(kernclassesr_[0][0]):
+    errmessage("unknown right kerning class");
+   fi
+  endfor
+  kernmatrix_[i][j]:=kvalue;
+ endgroup
+enddef;
+
+% adds a (multi-)ligature, e.g.
+% addligature("FB02","f","l");
+% addligature("FB04","f","f","l");
+def addligature(expr c)(text a) = 
+begingroup
+  save i,l;
+  numeric i,l;
+  l:=hex(ligatures_[0][0])+1;
+  ligatures_[0][0]:=hexadecimal l;
+  ligatures_[l][1]:=unicode c;
+  i:=1; % counter for ligature components (normaly 2)
+  for b=a:
+   i:=i+1;
+   ligatures_[l][i]:=unicode b;
+  endfor
+  % number of components + 1 is stored at 0th position
+  ligatures_[l][0]:=hexadecimal i; 
+ endgroup
+enddef;
+
+
 % ------ end of modifications by Linus Romer -----
 
 def italcorr expr x_sharp = if x_sharp>0: charic:=x_sharp fi enddef;
@@ -751,6 +846,46 @@ def end =
     "mf2outline: " & fvar & " " & scantokens (fvar & "_") & char 10 &
    fi
  endfor
+ if hex(kernclassesl_[0][0])>0:
+  "mf2outline: kerningclassesl " & char 10 &
+  for i=1 upto hex(kernclassesl_[0][0]):
+   for j=1 upto hex(kernclassesl_[i][0]):
+    kernclassesl_[i][j] & char 32 &
+   endfor
+   char 10 &
+  endfor
+ fi
+ if hex(kernclassesr_[0][0])>0:
+  "mf2outline: kerningclassesr " & char 10 &
+  for i=1 upto hex(kernclassesr_[0][0]):
+   for j=1 upto hex(kernclassesr_[i][0]):
+    kernclassesr_[i][j] & char 32 &
+   endfor
+   char 10 &
+  endfor
+ fi
+ if (hex(kernclassesl_[0][0])>0) and (hex(kernclassesr_[0][0])>0):
+  "mf2outline: kerningmatrix " & char 10 &
+  for i=1 upto hex(kernclassesl_[0][0]):
+   for j=1 upto hex(kernclassesr_[0][0]):
+    if known kernmatrix_[i][j]:
+     decimal(kernmatrix_[i][j]) & char 32 &
+    else:
+     char 48 & char 32 &
+    fi
+   endfor
+   char 10 &
+  endfor
+ fi
+ if hex(ligatures_[0][0])>0:
+  "mf2outline: ligatures " & char 10 &
+  for i=1 upto hex(ligatures_[0][0]):
+   for j=1 upto hex(ligatures_[i][0]):
+    ligatures_[i][j] & char 32 &
+   endfor
+   char 10 &
+  endfor
+ fi
  if hex(fontforgecommands_[0])>0:
   "mf2outline: fontforge " & char 10 &
   for i=1 upto hex(fontforgecommands_[0]):

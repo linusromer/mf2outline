@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20170103
+#mf2outline version 20170116
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -680,6 +680,11 @@ if __name__ == "__main__":
 	font_extra_space = 111 # this is a default (will change probably later)
 	font_range = None 
 	originalencoding = None # this will probably change
+	# some lists, that may be used later:
+	kerningclassesl = [] 
+	kerningclassesr = []
+	kerningmatrix = []
+	ligatures = []
 	fontforgecommands = [] # this list may be used later
 	with open(os.path.join(tempdir,"mf2outline.txt"), "r") as metricfile:
 		# the idea is to read through the file and store the relevant
@@ -727,13 +732,21 @@ if __name__ == "__main__":
 						font_quad = float(words[2]) *1000 / args.designsize
 					elif words[1] == "font_extra_space" and len(words) > 1:
 						font_extra_space = float(words[2]) *1000 / args.designsize
+					# and now some lists:
+					elif words[1] == "kerningclassesl":
+						currentlistname = "kerningclassesl"
+					elif words[1] == "kerningclassesr":
+						currentlistname = "kerningclassesr"
+					elif words[1] == "kerningmatrix":
+						currentlistname = "kerningmatrix"
+						args.ignoretfm = True
+					elif words[1] == "ligatures":
+						currentlistname = "ligatures"
+						args.ignoretfm = True
 					elif words[1] == "fontforge":
 						currentlistname = "fontforgecommands"
-			elif currentlistname !=  None: # if there is something to write to...
-				if (currentlistname == "fontforgecommands"):
-					vars()[currentlistname].append(line.rstrip('\n'))
-				# else: there may be other lists in future...
-					#vars()[currentlistname].append(line.split())
+			elif not currentlistname == "none": # if there is something to write to...
+				vars()[currentlistname].append(line.split())
 	
 	# since font.texparameters is not writeable, we have to
 	# insert TeX-data directly into the sfd-file:
@@ -763,7 +776,7 @@ if __name__ == "__main__":
 						fout.write("0 0 0 0 0 0 0 0 0 0 0 0 0 0 0")
 						fout.write("\n\n")
 		font=fontforge.open("%s/temp2.sfd" % tempdir)
-
+		
 	if args.verbose:
 		print "Setting the font encoding..."
 	if args.encoding == None:
@@ -872,7 +885,33 @@ if __name__ == "__main__":
 		if args.verbose:
 			print "Processing font metrics"
 		# read and integrate the tfm-file if needed (hence, there seem to be no OpenType features)
-		if not args.ignoretfm:
+		if args.ignoretfm:
+			# integrate kerningclasses
+			if len(kerningclassesl)>0 and len(kerningclassesr)>0:
+				kerningclassesr[:0] = [["0"]] # this is the "Everything else" feature from fontforge
+				for i in kerningmatrix:
+					i[:0] = ["0"] # "Everything else" shall not be kerned
+				kerningmatrix = [round(float(i)*1000/args.designsize) for j in kerningmatrix for i in j] # flatten 2d matrix to 1d (and string to int)
+				kerningclassesl = [[fontforge.nameFromUnicode(int(j,16)) for j in i] for i in kerningclassesl]
+				kerningclassesr = [[fontforge.nameFromUnicode(int(j,16)) for j in i] for i in kerningclassesr]
+				font.addLookup("Horizontal Kerning",
+				"gpos_pair",
+				(),
+				(("kern",(("DFLT",("dflt")),("latn",("dflt")),)),)) # Should be DFLT?
+				font.addKerningClass("Horizontal Kerning",
+				"Horizontal Kerning subtable",
+				kerningclassesl,
+				kerningclassesr,
+				kerningmatrix) # kerningmatrix float entries will be rounded
+			# add ligatures
+			if len(ligatures)>0:
+				font.addLookup('ligatures','gsub_ligature',(),(('liga',(('latn',('dflt')),)),))
+				font.addLookupSubtable('ligatures','ligatures subtable')
+				# make codes in ligatures to glyph names
+				ligatures=[[fontforge.nameFromUnicode(int(j,16)) for j in i] for i in ligatures]
+				for i in range(0,len(ligatures)):
+					font[ligatures[i][0]].addPosSub('ligatures subtable',(ligatures[i][1:]))
+		else: # tfm shall not be ignored and hence read and used
 			if args.verbose:
 				print "Reading kerning/ligature information from tfm..."
 			font.mergeFeature("%s/%s.tfm" % (tempdir, generalname))
