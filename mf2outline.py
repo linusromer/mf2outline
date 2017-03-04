@@ -719,7 +719,7 @@ if __name__ == "__main__":
 					elif words[1] == "font_os_weight" and len(words) > 1:
 						font.os2_weight = int(words[2])
 					elif words[1] == "font_os_width" and len(words) > 1:
-						font_os2_width = int(words[2])
+						font.os2_width = int(words[2])
 					elif words[1] == "font_range" and len(words) > 1:
 						font_range = [float(words[2]),float(words[3]),int(words[4])]
 					# texparameters:
