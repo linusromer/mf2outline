@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20170116prev";
+string base_name, base_version; base_name="mf2outline"; base_version="20170214prev";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -605,6 +605,20 @@ vardef unicode primary n =
  z
 enddef;
 
+% epscode(c) returns the code c multiplied by epsilon
+def epscode(expr c) =
+ (hex(substring(3,6) of unicode(c))*epsilon
+ +epsilon*256*16*hex(substring(0,3) of unicode(c)))
+enddef;
+
+% unicodeeps(c) returns the unicode of an
+% epscode c (code that was multiplied by epsilon)
+% this is the inverse macro of epscode()
+def unicodeeps(expr c) =
+ (substring(3,6) of unicode(floor(c*16)))
+  & (substring(3,6) of unicode(floor((c*16-floor(c*16))*256*16)))
+enddef;
+
 % c is no longer only a number or ASCII char (e.g. 65 or "A") 
 % but can also be a unicode string, representing a
 % hexadecimal number (eg "0041")
@@ -614,7 +628,7 @@ def beginchar(expr c,w_sharp,h_sharp,d_sharp) =
     charunicode:=if known c: unicode c else: "000000" fi; 
     charcode:=hex(substring(4,6) of charunicode); % this is the place inside the unicode subplane
     charext:=hex(substring(0,4) of charunicode); % this is the number of the unicode plane and subplane
-    charepscode:=charcode*epsilon+charext*epsilon*256; % this is the code multiplied by epsilon=1/65536
+    charepscode:=epscode(charunicode); % this is the code multiplied by epsilon=1/65536
     charwd:=w_sharp;      charht:=h_sharp;       chardp:=d_sharp;
     w:=charwd*pt; h:=charht*pt; d:=chardp*pt;
     charic:=0; clearxy; clearit; clearpen; scantokens extra_beginchar;
@@ -639,11 +653,13 @@ string fontforgecommands_[], % list of fontforge command
  kernclassesl_[][], % list of left kerning classes
  kernclassesr_[][], % list of right kerning classes
  ligatures_[][]; % list of ligatures
-numeric kernmatrix_[][]; % matrix with kerning entries
+numeric kernmatrix_[][], % matrix with kerning entries
+ randvariants_[][];
 fontforgecommands_[0]="0"; % number of commands (will be increased)
 kernclassesl_[0][0]="0"; % number of kernclassesl (will be increased)
 kernclassesr_[0][0]="0"; % number of kernclassesr (will be increased)
 ligatures_[0][0]="0"; % number of ligatures (will be increased)
+randvariants_[-1][0]:=0; % number glyphs with random variants (will be increased)
 
 % store a fontforge command into fontforgecommands_[]
 def fontforge(expr command) = 
@@ -742,6 +758,28 @@ begingroup
  endgroup
 enddef;
 
+% add a random variant (unicode v) 
+% for the original glyph (unicode o)
+% the structure of the randvariants_[][] array is
+% as follows: randvariants_[-1] stores the epscodes 
+% of the glyphs that have variants;
+% randvariants_[-1][0] is the number of such glyphs;
+% randvariants_[epscode][1] contains the first variant
+% of the glyph with epscode
+def addrandvariant(expr o,v) = 
+ % check if o has already been used
+ for i=0 upto randvariants_[-1][0]:
+  exitif randvariants_[-1][i]=epscode(o);
+  if i=randvariants_[-1][0]:
+   randvariants_[-1][0]:=randvariants_[-1][0]+1;
+   randvariants_[-1][randvariants_[-1][0]]:=epscode(o);
+   randvariants_[epscode(o)][0]:=0;
+  fi
+ endfor
+ % now store variant
+ randvariants_[epscode(o)][0]:=randvariants_[epscode(o)][0]+1;
+ randvariants_[epscode(o)][randvariants_[epscode(o)][0]]:=epscode(v);
+enddef;
 
 % ------ end of modifications by Linus Romer -----
 
@@ -882,6 +920,16 @@ def end =
   for i=1 upto hex(ligatures_[0][0]):
    for j=1 upto hex(ligatures_[i][0]):
     ligatures_[i][j] & char 32 &
+   endfor
+   char 10 &
+  endfor
+ fi
+ if randvariants_[-1][0]>0:
+  "mf2outline: randvariants " & char 10 & 
+  for i=1 upto randvariants_[-1][0]:
+   unicodeeps(randvariants_[-1][i]) & char 32 & 
+   for j=1 upto randvariants_[randvariants_[-1][i]][0]:
+    unicodeeps(randvariants_[randvariants_[-1][i]][j]) & char 32 &
    endfor
    char 10 &
   endfor

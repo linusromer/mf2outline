@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20170116
+#mf2outline version 20170304
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -637,6 +637,8 @@ if __name__ == "__main__":
 		font.design_size = 10
 	else:
 		font.design_size = args.designsize
+	font.os2_weight = 500 # default (may be overwritten)
+	font.os2_width = 5 # default (may be overwritten)
 	
 	mffile = os.path.abspath("%s" % args.mfsource)
 	tempdir = tempfile.mkdtemp()
@@ -685,6 +687,7 @@ if __name__ == "__main__":
 	kerningclassesr = []
 	kerningmatrix = []
 	ligatures = []
+	randvariants = []
 	fontforgecommands = [] # this list may be used later
 	with open(os.path.join(tempdir,"mf2outline.txt"), "r") as metricfile:
 		# the idea is to read through the file and store the relevant
@@ -714,7 +717,7 @@ if __name__ == "__main__":
 					elif words[1] == "font_coding_scheme" and len(words) > 1: 
 						originalencoding = " ".join(words[2:])
 					elif words[1] == "font_os_weight" and len(words) > 1:
-						font_os2_weight = int(words[2])
+						font.os2_weight = int(words[2])
 					elif words[1] == "font_os_width" and len(words) > 1:
 						font_os2_width = int(words[2])
 					elif words[1] == "font_range" and len(words) > 1:
@@ -743,6 +746,8 @@ if __name__ == "__main__":
 					elif words[1] == "ligatures":
 						currentlistname = "ligatures"
 						args.ignoretfm = True
+					elif words[1] == "randvariants":
+						currentlistname = "randvariants"
 					elif words[1] == "fontforge":
 						currentlistname = "fontforgecommands"
 			elif not currentlistname == "none": # if there is something to write to...
@@ -820,9 +825,7 @@ if __name__ == "__main__":
 	if args.vendor:
 		font.os2_vendor = args.vendor
 	# setting the weight
-	if args.weight == None:
-		font.os2_weight = 500 # default
-	else:
+	if args.weight != None:
 		font.os2_weight = args.weight
 	if font.os2_weight == 100:
 		font.weight = "Thin"
@@ -841,13 +844,11 @@ if __name__ == "__main__":
 	elif font.os2_weight == 900:
 		font.weight = "Black"
 	else:
-		font.os2_weight == 500
+		font.os2_weight = 500
 		font.weight = "Medium"
 	# setting the width
-	if args.width == None:
-		font.os2_weight = 5 # default
-	else:
-		font.os2_weight = args.width
+	if args.width != None:
+		font.os2_width = args.width
 	# setting the font comment
 	font.comment = "Created with mf2outline."
 	#setting the font range
@@ -879,7 +880,7 @@ if __name__ == "__main__":
 							glyph.texdepth = round(float(words[3]) *1000 / args.designsize)
 						elif words[2] == "charic": # the italic correction of the current char
 							glyph.italicCorrection = round(float(words[3]) *1000 / args.designsize)	
-	
+		
 	generalname = os.path.splitext(os.path.basename(args.mfsource))[0]	
 	if not args.preview: # preview does not need ligatures, kernings etc.
 		if args.verbose:
@@ -897,7 +898,7 @@ if __name__ == "__main__":
 				font.addLookup("Horizontal Kerning",
 				"gpos_pair",
 				(),
-				(("kern",(("DFLT",("dflt")),("latn",("dflt")),)),)) # Should be DFLT?
+				(("kern",(("DFLT",("dflt")),("latn",("dflt")),)),)) 
 				font.addKerningClass("Horizontal Kerning",
 				"Horizontal Kerning subtable",
 				kerningclassesl,
@@ -915,6 +916,15 @@ if __name__ == "__main__":
 			if args.verbose:
 				print "Reading kerning/ligature information from tfm..."
 			font.mergeFeature("%s/%s.tfm" % (tempdir, generalname))
+		# apply random variants
+		if len(randvariants)>0:
+			font.addLookup("Randomize lookup","gsub_alternate",(),\
+			(('rand',(('DFLT', ('dflt',)),('latn', ('dflt',)))),))
+			font.addLookupSubtable("Randomize lookup", "Randomize subtable")
+			for i in range(0,len(randvariants)):
+				origcode = randvariants[i][0]
+				font[int(origcode,16)].addPosSub("Randomize subtable",\
+				[fontforge.nameFromUnicode(int(j,16)) for j in randvariants[i][1:]])
 		# apply fontforge commands
 		if len(fontforgecommands)>0:
 			for i in range(0,len(fontforgecommands)):
@@ -966,6 +976,25 @@ if __name__ == "__main__":
 			if args.veryverbose:
 				print "Adding extrema"
 			font.addExtrema()
+			if args.veryverbose:
+				print "Simplifying"
+			font.simplify()
+			if args.veryverbose:
+				print "Rounding"
+			font.round()
+			if args.veryverbose:
+				print "Simplifying"
+			font.simplify()
+			if args.veryverbose:
+				print "Rounding"
+			font.round()
+			# and one more time... (this is needed!)
+			if args.veryverbose:
+				print "Adding extrema"
+			font.addExtrema()
+			if args.veryverbose:
+				print "Rounding"
+			font.round()
 			if args.veryverbose:
 				print "Simplifying"
 			font.simplify()
