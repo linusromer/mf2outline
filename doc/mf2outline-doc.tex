@@ -11,7 +11,7 @@
 \title{mf2outline}
 \author{Linus Romer}
 
-\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{basicstyle=\scriptsize\ttfamily,breaklines=true}
 
 \begin{document}	
 %
@@ -68,17 +68,31 @@ You may add some of these optional arguments:
 	\item[-h, -{}-help] \hfill \\
 		Show the help message and exit.
 	\item[-v, -{}-verbose ] \hfill \\
-		Explain what is being done.
+		Explain what is being done.\\
+		Default: False
 	\item[-vv, -{}-veryverbose] \hfill \\
-		Explain very detailed what is being done.
+		Explain very detailed what is being done.\\
+		Default: False
 	\item[-{}-designsize SIZE] \hfill \\
-		Force the designsize to be SIZE (e.g. 12 for 12pt).
+		Force the designsize to be SIZE (e.g. 12 for 12pt).\\
+		Default: 10pt at first guess, but if the 
+		designsize is defined somewhere in the mf sources,
+		a new run with the correct size will be launched.
 	\item[-{}-raw] \hfill \\
-		Do not remove overlaps, round to int, add extrema, add hints\ldots
-	\item[-{}-preview  ] \hfill \\
+		Do not remove overlaps, round to int, add extrema, add hints\ldots\\
+		Default: False
+	\item[-{}-igonre-tfm] \hfill \\
+		Do not read any data from the tfm file...\ldots\\
+		Default: False
+	\item[-{}-preview] \hfill \\
 		Use icosagon pens instead of circle/elliptic pens and do not 
 		care about advanced font features like kerning and ligatures 
-		(makes things faster, mainly used for \textffm{METAFLOP}).
+		(makes things faster, mainly used for \textffm{METAFLOP}).\\
+		Default: False
+	\item[-{}-use-ff-commands] \hfill \\
+		Read additional fontforge commands from mf2outline.txt.
+		This may be insecure (uses exec)...\\
+		Default: False
 	\item[-f FORMATS, -{}-formats FORMATS] \hfill \\
 		Generate the formats FORMATS (comma separated list).\\
 		Supported formats: sfd, afm, pfa, pfb, otf, ttf, eoff, 

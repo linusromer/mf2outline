@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20170304
+#mf2outline version 20170313
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -56,8 +56,8 @@ def generate_pdf(font,mffile,outputname,tempdir,mainargs):
 	# write tex-file for proof images
 	with open(os.path.join(tempdir, "%s.tex" % outputname), "w") as texfile:
 		texfile.write("\documentclass{article}\n")
-		texfile.write("\usepackage{graphicx}\n")
-		texfile.write("\usepackage[left=1cm,right=1cm,bottom=1cm]{geometry}\n")
+		texfile.write("\\usepackage{graphicx}\n")
+		texfile.write("\\usepackage[left=1cm,right=1cm,bottom=1cm]{geometry}\n")
 		texfile.write("\pagestyle{empty}\n")
 		texfile.write("\\begin{document}\n")
 		texfile.write("\\begin{center}\n")
@@ -529,6 +529,12 @@ if __name__ == "__main__":
 		help="Use icosagon pens instead of circle/elliptic pens and do not" \
 		"care about advanced font features like kerning and ligatures" \
 		"(makes things faster, mainly used for METAFLOP). ")
+	parser.add_argument("--use-ff-commands",
+		action="store_true",
+		dest="useffcommands",
+		default=False,
+		help="Read additional fontforge commands from mf2outline.txt." \
+		"This may be insecure (uses exec)...")
 	parser.add_argument("-f", "--formats",
 		action="append",
 		dest="formats",
@@ -629,7 +635,7 @@ if __name__ == "__main__":
 		args.verbose=True
 
 	if not (os.path.isfile(args.mfsource) or os.path.isfile(args.mfsource+".mf")):
-		print "Cannot find your specified source file '%s'" % args.mfsource
+		print("Cannot find your specified source file '%s'" % args.mfsource)
 		exit(1)
 	
 	font = fontforge.font()
@@ -645,14 +651,14 @@ if __name__ == "__main__":
 	workdir = os.path.split(os.path.abspath(sys.argv[0]))[0]
 	
 	if args.verbose:
-		print "Running METAPOST..."
-		print "-------------------"
+		print("Running METAPOST...")
+		print("-------------------")
 	run_metapost(mffile,font.design_size,workdir,tempdir,args)
 	if args.verbose:
-		print "-------------------"
+		print("-------------------")
 	if args.designsize == None:	
 		if args.verbose:
-			print "Checking the designsize in mf2outline.txt..."
+			print("Checking the designsize in mf2outline.txt...")
 		with open(os.path.join(tempdir,"mf2outline.txt"), "r") as metricfile:
 			for line in metricfile:
 				if line[:11] == "mf2outline:":
@@ -663,16 +669,16 @@ if __name__ == "__main__":
 		if font.design_size != args.designsize: # remember that we just set 10pt by default
 			font.design_size = args.designsize
 			if args.verbose:
-				print "The correct designsize is %s, hence I have to run METAPOST again..." % font.design_size
+				print("The correct designsize is %s, hence I have to run METAPOST again..." % font.design_size)
 			run_metapost(mffile,font.design_size,workdir,tempdir,args)
 	
 	if args.veryverbose:
 		f = open('%s/mf2outline.txt' % tempdir,"r")
-		print f.read()
+		print(f.read())
 		f.close()
 	
 	if args.verbose:
-		print "Importing font metrics from mf2outline.txt..."
+		print("Importing font metrics from mf2outline.txt...")
 	font_slant = 0 # this is a default (will change probably later)
 	font_normal_space = 333 # this is a default (will change probably later)
 	font_normal_stretch = 167 # this is a default (will change probably later)
@@ -759,7 +765,7 @@ if __name__ == "__main__":
 	# if "tfm" in args.formats:
 	if "tfm" or "sfd" in args.formats:
 		if args.verbose:
-			print "Writing some special TeX parameters..."
+			print("Writing some special TeX parameters...")
 		font.save("%s/temp.sfd" % tempdir)
 		with open("%s/temp.sfd" % tempdir, 'r') as fin:
 			lines=fin.readlines()
@@ -783,7 +789,7 @@ if __name__ == "__main__":
 		font=fontforge.open("%s/temp2.sfd" % tempdir)
 		
 	if args.verbose:
-		print "Setting the font encoding..."
+		print("Setting the font encoding...")
 	if args.encoding == None:
 		if originalencoding == None:
 			font.encoding = "unicode"
@@ -803,13 +809,13 @@ if __name__ == "__main__":
 		fontforge.loadEncodingFile(os.path.join(os.path.split(os.path.abspath("%s" % args.mfsource))[0],"%s.enc" %args.encoding))
 		font.encoding = args.encoding
 	else:
-		print os.path.join(os.path.split(os.path.abspath("%s" % args.mfsource))[0],"%s.enc" %args.encoding)
+		print(os.path.join(os.path.split(os.path.abspath("%s" % args.mfsource))[0],"%s.enc" %args.encoding))
 		if args.verbose:
-			print "I do not know this encoding but will continue with Unicode (BMP)"
+			print("I do not know this encoding but will continue with Unicode (BMP)")
 		font.encoding = "unicode"
 	
 	if args.verbose:
-		print "Setting other general font information..."
+		print("Setting other general font information...")
 	if args.fullname:
 		font.fullname = args.fullname
 	if args.fontname:
@@ -857,7 +863,7 @@ if __name__ == "__main__":
 		font_range[1],font_range[2],(('English (US)','Regular'),))
 
 	if args.verbose:
-		print "Importing glyphs and adding glyph metrics..."
+		print("Importing glyphs and adding glyph metrics...")
 	glyph_files = glob.glob(os.path.join(tempdir, "*.eps"))
 	for eps in glyph_files:
 		code  = int(os.path.splitext(os.path.basename(eps))[0],16) # string is in hexadecimal
@@ -884,7 +890,7 @@ if __name__ == "__main__":
 	generalname = os.path.splitext(os.path.basename(args.mfsource))[0]	
 	if not args.preview: # preview does not need ligatures, kernings etc.
 		if args.verbose:
-			print "Processing font metrics"
+			print("Processing font metrics")
 		# read and integrate the tfm-file if needed (hence, there seem to be no OpenType features)
 		if args.ignoretfm:
 			# integrate kerningclasses
@@ -914,7 +920,7 @@ if __name__ == "__main__":
 					font[ligatures[i][0]].addPosSub('ligatures subtable',(ligatures[i][1:]))
 		else: # tfm shall not be ignored and hence read and used
 			if args.verbose:
-				print "Reading kerning/ligature information from tfm..."
+				print("Reading kerning/ligature information from tfm...")
 			font.mergeFeature("%s/%s.tfm" % (tempdir, generalname))
 		# apply random variants
 		if len(randvariants)>0:
@@ -926,16 +932,14 @@ if __name__ == "__main__":
 				font[int(origcode,16)].addPosSub("Randomize subtable",\
 				[fontforge.nameFromUnicode(int(j,16)) for j in randvariants[i][1:]])
 		# apply fontforge commands
-		if len(fontforgecommands)>0:
+		if len(fontforgecommands)>0 and args.useffcommands:
 			for i in range(0,len(fontforgecommands)):
-				# check if it is save (i.e. if it belongs to object "font":
-				if fontforgecommands[i][:5] == ("font." or "font["):
-					exec(fontforgecommands[i])
+				exec(fontforgecommands[i])
 				
 	if font.encoding == "T1Encoding" \
 	or font.encoding == "OT1Encoding":
 		if args.veryverbose:
-			print "Adding the space character..."
+			print("Adding the space character...")
 		currentencoding = font.encoding
 		font.encoding = "unicode" #add space for non-TeX use
 		font.createChar(32)
@@ -944,71 +948,71 @@ if __name__ == "__main__":
 	
 	if not args.raw:
 		if args.verbose:
-			print "General finetuning in fontforge..."
+			print("General finetuning in fontforge...")
 		if args.preview:
 			font.selection.all()
 			if args.veryverbose:
-				print "Removing overlaps"
+				print("Removing overlaps")
 			font.removeOverlap()
 			if args.veryverbose:
-				print "Correcting directions"
+				print("Correcting directions")
 			font.correctDirection()
 			if args.veryverbose:
-				print "Rounding"
+				print("Rounding")
 			font.round()
 			if args.veryverbose:
-				print "Hinting"
+				print("Hinting")
 			font.autoHint()
 		elif args.ffscript == "": # no user defined script
 			font.selection.all()
 			if args.veryverbose:
-				print "Rounding to 1/100 unit"
+				print("Rounding to 1/100 unit")
 			font.round(100)
 			if args.veryverbose:
-				print "Removing overlaps"
+				print("Removing overlaps")
 			font.removeOverlap()
 			if args.veryverbose:
-				print "Correcting directions"
+				print("Correcting directions")
 			font.correctDirection()
 			if args.veryverbose:
-				print "Rounding to 1/100 unit"
+				print("Rounding to 1/100 unit")
 			font.round(100) # otherwise, extrema may be ugly
 			if args.veryverbose:
-				print "Adding extrema"
+				print("Adding extrema")
 			font.addExtrema()
 			if args.veryverbose:
-				print "Simplifying"
+				print("Simplifying")
 			font.simplify()
 			if args.veryverbose:
-				print "Rounding"
+				print("Rounding")
 			font.round()
 			if args.veryverbose:
-				print "Simplifying"
+				print("Simplifying")
 			font.simplify()
 			if args.veryverbose:
-				print "Rounding"
+				print("Rounding")
 			font.round()
 			# and one more time... (this is needed!)
 			if args.veryverbose:
-				print "Adding extrema"
+				print("Adding extrema")
 			font.addExtrema()
 			if args.veryverbose:
-				print "Rounding"
+				print("Rounding")
 			font.round()
 			if args.veryverbose:
-				print "Simplifying"
+				print("Simplifying")
 			font.simplify()
 			if args.veryverbose:
-				print "Rounding"
+				print("Rounding")
 			font.round()
 			if args.veryverbose:
-				print "Simplifying"
+				print("Simplifying")
 			font.simplify()
 			if args.veryverbose:
-				print "Rounding"
+				print("Rounding")
 			font.round()
 			if args.veryverbose:
-				print "Hinting"
+				print("Hinting")
 			font.autoHint()
 		else:		# user defined script
 			font.save("%s/temp.sfd" % tempdir)
@@ -1024,7 +1028,7 @@ if __name__ == "__main__":
 			font=fontforge.open("%s/temp.sfd" % tempdir)
 			 
 	if args.verbose:
-		print "Saving outline font file..."
+		print("Saving outline font file...")
 	if args.fullnameasfilename:
 		outputname = font.fullname
 	else:
