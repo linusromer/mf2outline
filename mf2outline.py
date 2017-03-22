@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20170313
+#mf2outline version 20170322
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -30,7 +30,9 @@ def run_metapost(mffile,design_size,workdir,tempdir,mainargs):
 	'\mode=localfont;',
 	'mag:=%s;' % (1003.75/design_size), 
 	'nonstopmode;',
-	'outputtemplate:=\"%{charunicode}.eps\";',
+	'outputtemplate:=\"%c.eps\";'
+	if mainargs.max256
+	else 'outputtemplate:=\"%{charunicode}.eps\";',
 	'input %s;' % mffile,
 	'bye']
 	subprocess.call(
@@ -74,7 +76,10 @@ def generate_pdf(font,mffile,outputname,tempdir,mainargs):
 		mpslist = sorted(glob.glob(os.path.join(tempdir, "*.mps")),
 		key=lambda name: int(os.path.splitext(os.path.basename(name))[0],16))
 		for i in mpslist:
-			code = int(os.path.splitext(os.path.basename(i))[0],16)
+			if mainargs.max256:
+				code = int(os.path.splitext(os.path.basename(i))[0])
+			else:
+				code = int(os.path.splitext(os.path.basename(i))[0],16)
 			texfile.write("\\begin{tabular}{|l|c|}\hline\n")
 			texfile.write("glyph name & %s\\\\\hline\n" % font[code].glyphname)
 			texfile.write("code (hexadecimal) & %s\\\\\hline\n" % os.path.splitext(os.path.basename(i))[0])
@@ -522,6 +527,12 @@ if __name__ == "__main__":
 		dest="ignoretfm",
 		default=False,
 		help="Do not read any data from the tfm file...")
+	parser.add_argument("--max256",
+		action="store_true",
+		dest="max256",
+		default=False,
+		help="Use charcode (256 codes) instead of charunicode" \
+		"(1111998 codes). This is needed for Malvern Greek.")
 	parser.add_argument("--preview",
 		action="store_true",
 		dest="preview",
@@ -866,7 +877,10 @@ if __name__ == "__main__":
 		print("Importing glyphs and adding glyph metrics...")
 	glyph_files = glob.glob(os.path.join(tempdir, "*.eps"))
 	for eps in glyph_files:
-		code  = int(os.path.splitext(os.path.basename(eps))[0],16) # string is in hexadecimal
+		if args.max256:
+			code  = int(os.path.splitext(os.path.basename(eps))[0]) 
+		else:
+			code  = int(os.path.splitext(os.path.basename(eps))[0],16) # string is in hexadecimal
 		if args.encoding == "unicode":
 			glyph = font.createChar(code,fontforge.nameFromUnicode(code))
 		else:
