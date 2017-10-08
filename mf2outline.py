@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20170322
+#mf2outline version 20170924
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -63,7 +63,7 @@ def generate_pdf(font,mffile,outputname,tempdir,mainargs):
 		texfile.write("\pagestyle{empty}\n")
 		texfile.write("\\begin{document}\n")
 		texfile.write("\\begin{center}\n")
-		texfile.write("\mbox{}\n\n\\vspace{3cm}\n{\Huge\\textbf{%s}}\\\\[3ex]\n" % outputname)
+		texfile.write("\mbox{}\n\n\\vspace{3cm}\n{\Huge\\verb|%s|}\\\\[3ex]\n" % outputname)
 		texfile.write("\\today\\\\\n")
 		texfile.write("\\vspace{2cm}\n")
 		texfile.write("\\begin{tabular}{|l|c|}\hline\n")
@@ -979,9 +979,9 @@ if __name__ == "__main__":
 			font.autoHint()
 		elif args.ffscript == "": # no user defined script
 			font.selection.all()
-			if args.veryverbose:
-				print("Rounding to 1/100 unit")
-			font.round(100)
+			#if args.veryverbose:
+			#	print("Rounding to 1/100 unit")
+			#font.round(100)
 			if args.veryverbose:
 				print("Removing overlaps")
 			font.removeOverlap()
@@ -1049,7 +1049,7 @@ if __name__ == "__main__":
 		outputname = generalname
 	for outlineformat in args.formats:
 		if outlineformat == "sfd":
-			font.encoding = "compacted"
+			#font.encoding = "compacted"
 			font.save("%s.%s" % (outputname,outlineformat))
 		elif outlineformat == "pdf":
 			generate_pdf(font,mffile,outputname,tempdir,args)
