@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20170924
+#mf2outline version 20171029
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -41,6 +41,271 @@ def run_metapost(mffile,design_size,workdir,tempdir,mainargs):
 	stderr = subprocess.PIPE,
 	cwd = tempdir
 	)
+	
+# this takes away "[" and "]"
+def isolate_number(s):
+	if s[0] == "[":
+		try:
+			return float(s[1:])
+		except ValueError:
+			return None
+	elif s[len(s)-1] == "]":
+		try:
+			return float(s[:len(s)-1])
+		except ValueError:
+			return None
+	else:
+		try:
+			return float(s)
+		except ValueError:
+			return None
+	
+# make a homogeneous transformation m*(x,y,1) or
+# truncated matrix m*(x,y)
+# and return the transformed x and y
+def homogeneous(m,x,y):
+	if len(m)==4: # truncated matrix (dtransform)
+		return [m[0]*x+m[2]*y,m[1]*x+m[3]*y]
+	elif len(m)==6: # general case
+		return [m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]]
+	else:
+		return [x,y] # wrong matrix dimensions, no change
+		
+# inverts the transformationmatrix
+def invertmatrix(m):
+	if len(m)>3:
+		c = 1.0/(m[0]*m[3]-m[1]*m[2]) # determinant coefficient
+	if len(m)==4: # truncated matrix (dinvert)
+		return [c*m[3],-c*m[2],-c*m[1],c*m[0]]
+	elif len(m)==6: # general case
+		return [c*m[3],-c*m[2],-c*m[1],c*m[0],-m[4],-m[5]]
+	else:
+		return m # wrong matrix dimensions, no change
+		
+# returns 1 iff point p is right of the line
+# going from point q through point r
+# obsolete
+#def side(p,q,r):
+	#if (r[0]-q[0])*(q[1]-p[1]) > (r[1]-q[1])*(q[0]-p[0]):
+		#return 1
+	#else:
+		#return -1
+
+# Returns the turning angle of a
+# contour c in degree . E.g. if c is a circle
+# that turns counterclockwise, it wil
+# return 360 (-360 for clockwise).
+# Half a circle would return 180 (-180
+# for clockwise).
+# obsolete
+#def turning_angle(c):
+	#angle = 0
+	#l = len(c)
+	#for i in range(0,l):
+		#ax = c[i%l].x-c[(i-1)%l].x
+		#ay = c[i%l].y-c[(i-1)%l].y
+		#bx = c[(i+1)%l].x-c[i%l].x
+		#by = c[(i+1)%l].y-c[i%l].y
+		#if not (ax*ay == 0  or bx*by == 0):
+			#angle += side((c[(i+1)%l].x,c[(i+1)%l].y),(c[i%l].x,c[i%l].y),(c[(i-1)%l].x,c[(i-1)%l].y))* \
+			#math.degrees(math.acos(max(-1,min(1,(ax*bx+ay*by)/((ax**2+ay**2)**.5*(bx**2+by**2)**.5)))))
+	#return angle
+
+# reverses the contour c iff c turns counterclockwise
+# this is a sort of a replacment for the buggy correctDirection()
+# from fontforge (which does not work for the dish erasers in Computer 
+# Modern serifs)
+# obsolete
+#def make_clockwise(c):
+	#if turning_angle(c)>0:
+		#c.reverseDirection()
+		
+# own postscript interpreter for a postscript file "eps" 
+# into the glyph "glyph"
+def import_ps(eps,glyph):
+	with open(eps, "r") as epsfile:
+		# read through the lines and write them continously  as contours
+		# in a fontforge char
+		# this is specialized for Metapost Output and useless for
+		# general postscript
+		#
+		# some variable declarations
+		layer = fontforge.layer()
+		is_white = False # any other color than white will be interpreted as black
+		linewidth = 1 # just default
+		stack = [] # ps stack (coordinate of points, pen dimensions etc.)
+		ctm = [1.0,0.0,0.0,1.0,0.0,0.0] # current transformation matrix
+		dash = 0
+		linecap = "round"
+		linejoin = "round"
+		miterlimit = 10
+		stroke_follows_fill = False 
+		gsave_contour = fontforge.contour() # contour that is saved by gsave
+		gsave_ctm = [1.0,0.0,0.0,1.0,0.0,0.0] # current transformation matrix that is saved by gsave
+		gsave_is_white = False # "color" saved by gsave
+		contour = fontforge.contour() # just declaring
+		#
+		# okay, let's start:
+		for line in epsfile:
+			if line[0] != "%" and len(line)>0: # ignore comments
+				if "gsave fill grestore stroke" in line: # this happens just so often, so we treat it as special case
+					stroke_follows_fill = True # pay attention...
+				words = line.split()
+				for word in words: # go through the words
+					# showpage will have no effect
+					if isolate_number(word) != None:
+						stack.append(isolate_number(word))
+					elif word == "newpath":
+						contour = fontforge.contour()
+					elif word == "moveto":
+						contour.moveTo(stack[len(stack)-2],stack[len(stack)-1])
+						stack = stack[:(len(stack)-2)]
+					elif word == "lineto":
+						contour.lineTo(stack[len(stack)-2],stack[len(stack)-1])
+						stack = stack[:(len(stack)-2)]
+					elif word == "curveto":
+						contour.cubicTo(stack[len(stack)-6],stack[len(stack)-5],\
+						stack[len(stack)-4],stack[len(stack)-3],\
+						stack[len(stack)-2],stack[len(stack)-1])
+						stack = stack[:(len(stack)-6)]
+					elif word == "closepath":
+						contour.closed = True
+					elif word == "setrgbcolor":
+						if stack[len(stack)-1] == 1 and \
+						stack[len(stack)-2] == 1 and \
+						stack[len(stack)-3] == 1:
+							is_white = True
+						else:
+							is_white = False
+						stack = stack[:(len(stack)-3)]
+					elif word == "setlinewidth":
+						linewidth = stack.pop()
+					elif word == "setdash":
+						dash = stack.pop()
+					elif word == "setlinecap":
+						linecapcode = stack.pop()
+						if linecapcode == 0:
+							linecap = "butt"
+						elif linecapcode == 2:
+							linecap = "square"
+						else:
+							linecap = "round"
+					elif word == "setlinejoin":
+						linejoincode = stack.pop()
+						if linejoincode == 0:
+							linejoin = "miter"
+						elif linejoincode == 2:
+							linejoin = "bevel"
+						else:
+							linejoin = "round"
+					elif word == "setmiterlimit":
+						miterlimit = stack.pop()
+					elif word == "scale":
+						sy=stack.pop()
+						sx=stack.pop()
+						ctm=[ctm[0]*sx,ctm[1]*sy,ctm[2]*sx,ctm[3]*sy,ctm[4]*sx,ctm[5]*sy]
+					elif word == "concat":
+						f=stack.pop()
+						e=stack.pop()
+						d=stack.pop()
+						c=stack.pop()
+						b=stack.pop()
+						a=stack.pop()
+						ctm=[a*ctm[0]+c*ctm[1],b*ctm[0]+d*ctm[1],\
+						a*ctm[2]+c*ctm[3],b*ctm[2]+d*ctm[3],\
+						a*ctm[4]+c*ctm[5]+e,b*ctm[4]+d*ctm[5]+f]
+					elif word == "dtransform":
+						dy=stack.pop()
+						dx=stack.pop()
+						stack.extend(homogeneous(ctm[:4],dx,dy))
+					elif word == "idtransform":
+						dy=stack.pop()
+						dx=stack.pop()
+						stack.extend(homogeneous(invertmatrix(ctm[:4]),dx,dy))
+					elif word == "transform":
+						y=stack.pop()
+						x=stack.pop()
+						stack.extend(homogeneous(ctm,x,y))
+					elif word == "itransform":
+						y=stack.pop()
+						x=stack.pop()
+						stack.extend(homogeneous(invertmatrix(ctm),x,y))
+					elif word == "exch":
+						last = stack.pop()
+						secondlast = stack.pop()
+						stack.extend([last,secondlast])
+					elif word == "truncate":
+						stack[len(stack)-1]=int(stack[len(stack)-1])
+					elif word == "pop":
+						stack.pop()
+					elif word == "fill" and not stroke_follows_fill:
+						templayer = fontforge.layer()
+						templayer += contour
+						templayer.round(100)
+						if is_white:
+							#layer.exclude(templayer)	
+							# exclude does not work properly in fontforge
+							# so we intersect the templayer with the layer
+							# and exclude that from the layer by making
+							# it counterclockwise and removeOverlap()
+							templayer += layer
+							templayer.intersect()
+							for i in range(0,len(templayer)):
+								if templayer[i].isClockwise():
+									templayer[i].reverseDirection()
+						layer += templayer
+						layer.removeOverlap()
+						layer.round(100)
+					elif word == "stroke":
+						# We have to determine the angle and the 
+						# axis of the ellipse that is the product of
+						# a circle with radius=linewidth with the 
+						# ctm (current transformation matrix.
+						# One would have to consider also shearing,
+						# but METAPOST makes the ctm (for pens)
+						# always as a product of rotation matrix and 
+						# a diagonal (non-uniform scaling) matrix.
+						# Hence, we make a quick an dirty computation
+						if ctm[0] == ctm[1]:
+							alpha = .25*math.pi
+						else:
+							alpha = math.atan(ctm[1]/ctm[0])
+						pen_x = abs(linewidth*ctm[0]/math.cos(alpha))
+						pen_y = abs(linewidth*ctm[3]/math.cos(alpha))
+						templayer = fontforge.layer()
+						templayer += contour
+						if not (pen_x == 0 or pen_y == 0):
+							templayer.round(100)
+							if stroke_follows_fill:
+								templayer.stroke("eliptical",\
+								pen_x,pen_y,alpha,linecap,linejoin,\
+								"removeinternal")
+							else:
+								templayer.stroke("eliptical",\
+								pen_x,pen_y,alpha,linecap,linejoin)
+						if stroke_follows_fill: # this is need because of the "if not" above
+							stroke_follows_fill = False
+						if is_white:
+							#layer.exclude(templayer)	
+							# exclude does not work properly in fontforge
+							# so we intersect the templayer with the layer
+							# and exclude that from the layer by making
+							# it counterclockwise and removeOverlap()
+							#layer = layer + templayer			
+							print "do nothing"		
+						else:
+							layer = layer + templayer
+						layer.removeOverlap()
+						layer.round(100)
+					elif word == "gsave" and not stroke_follows_fill:
+						gsave_contour = contour.dup() 
+						gsave_ctm = ctm 
+						gsave_is_white = is_white
+					elif word == "grestore" and not stroke_follows_fill:
+						contour = gsave_contour.dup() 
+						ctm = gsave_ctm 
+						is_white = gsave_is_white
+		glyph.foreground = layer
 	
 def generate_pdf(font,mffile,outputname,tempdir,mainargs):
 	subprocess.call( # run mpost in proof mode
@@ -540,6 +805,12 @@ if __name__ == "__main__":
 		help="Use icosagon pens instead of circle/elliptic pens and do not" \
 		"care about advanced font features like kerning and ligatures" \
 		"(makes things faster, mainly used for METAFLOP). ")
+	parser.add_argument("--psimport",
+		action="store_true",
+		dest="psimport",
+		default=False,
+		help="Use own PostScript import instead of the PostScript" \
+		"import provided by FontForge.")
 	parser.add_argument("--use-ff-commands",
 		action="store_true",
 		dest="useffcommands",
@@ -881,12 +1152,17 @@ if __name__ == "__main__":
 			code  = int(os.path.splitext(os.path.basename(eps))[0]) 
 		else:
 			code  = int(os.path.splitext(os.path.basename(eps))[0],16) # string is in hexadecimal
+		if args.veryverbose:
+			print("["+str(code)+"]")
 		if args.encoding == "unicode":
 			glyph = font.createChar(code,fontforge.nameFromUnicode(code))
 		else:
 			glyph = font.createMappedChar(code)
 		if not ((args.encoding == "unicode") and (code == 32) or (args.encoding == "t1" and code == 23)): # do not read space/cwm (it will be empty)
-			glyph.importOutlines(eps, ("toobigwarn", "correctdir"))
+			if args.psimport:
+				import_ps(eps,glyph)
+			else:			
+				glyph.importOutlines(eps, ("toobigwarn", "correctdir"))
 		with open(eps, "r") as epsfile:
 			for line in epsfile:
 				if line[0] == "%": # only look at comments	
