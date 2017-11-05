@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20171029
+#mf2outline version 20171105
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
