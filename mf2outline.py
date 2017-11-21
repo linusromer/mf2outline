@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20171105
+#mf2outline version 20171121
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -119,6 +119,119 @@ def invertmatrix(m):
 #def make_clockwise(c):
 	#if turning_angle(c)>0:
 		#c.reverseDirection()
+		
+# For the own postscript interpreter we use the following 
+# convention for cubic bezier paths:
+# (0,1)--(3,4)..controls (1,2) and (-2,7)..(8,5)--(2,9)
+# maps bijective to
+# [[(0,1)],[(3,4)],[(1,2),(-2,7),(8,5)],[2,9]]
+# We will NOT store, if the path is cyclic, because for
+# elliptical pens this is equivalent to make the first 
+# and the last point the same
+
+def vecadd(a,b):
+	return (a[0]+b[0],a[1]+b[1])
+
+def vecdiff(a,b):
+	return (a[0]-b[0],a[1]-b[1])
+
+def veclen(a):
+	return (a[0]**2+a[1]**2)**.5
+	
+def vecnorm(a):
+	return (a[0]/veclen(a),a[1]/veclen(a))
+	
+# scale a vector a such that it has length l
+# (if l is negative, it will be in opposite direction)
+def vecscaleto(a,l):
+	return (a[0]/veclen(a)*l,a[1]/veclen(a)*l)
+
+# returns a points right of point p where right
+# means rectangular to direction d in distance r
+# (choose r negative for a left point)
+def pointright(p,d,r):
+	dscaled = vecscaleto(d,r)
+	return (p[0]+dscaled[1],p[1]-dscaled[0])
+
+# bezierinterpolate returns a bezier path as list (see the convention
+# as above) which starts in point za, heading in direction dira, 
+# passing zb at time 0.5 and ending in time 1
+# at zc heading in direction dirc
+def bezierinterpolate(za,dira,zb,zc,dirc):
+	# (xp,yp) is the first control point
+	# (xq,yq) is the second control point
+	# solve([(yp-ya)*xdira=(xp-xa)*ydira,
+	#(yq-yc)*xdirc=(xq-xc)*ydirc,
+	# xb=0.125*(xa+3*xp+3*xq+xc),
+	# yb=0.125*(ya+3*yp+3*yq+yc)],[xp,yp,xq,yq])
+	# yields to
+	xa = float(za[0])
+	ya = float(za[1])
+	xdira = float(dira[0])
+	ydira = float(dira[1])
+	xb = float(zb[0])
+	yb = float(zb[1])
+	xc = float(zc[0])
+	yc = float(zc[1])
+	xdirc = float(dirc[0])
+	ydirc = float(dirc[1])
+	xp=(-((-xdira*ydirc-3*ydira*xdirc)*xa+4*xdira*xdirc*ya+xdira
+	*(4*xdirc*yc-8*xdirc*yb-4*ydirc*xc+8*ydirc*xb))
+	/(3*ydira*xdirc-3*xdira*ydirc))
+	yp=(-(-4*ydira*ydirc*xa+(3*xdira*ydirc+ydira*xdirc)*ya+ydira
+	*(4*xdirc*yc-8*xdirc*yb-4*ydirc*xc+8*ydirc*xb))
+	/(3*ydira*xdirc-3*xdira*ydirc))
+	xq=((-4*ydira*xdirc*xa+ydira*(8*xdirc*xb-xdirc*xc)
+	+4*xdira*xdirc*ya+xdira*(4*xdirc*yc-8*xdirc*yb-3*ydirc*xc))
+	/(3*ydira*xdirc-3*xdira*ydirc))
+	yq=((-4*ydira*ydirc*xa+4*xdira*ydirc*ya
+	+ydira*(3*xdirc*yc-4*ydirc*xc+8*ydirc*xb)
+	+xdira*(ydirc*yc-8*ydirc*yb))/(3*ydira*xdirc-3*xdira*ydirc))
+	return [[za],[(xp,yp),(xq,yq),zc]]
+	
+# parallel of a cubic bezier path p (start,control1,control2,end)
+# in distance r at the right iff r>0 (else left)
+def beziersidepath(p,r):
+	# compute the midpoint (t = 0.5) of the original path
+	mid = (0.125*(p[0][-1][0]+3*p[1][0][0]+3*p[1][1][0]+p[1][2][0]),
+	0.125*(p[0][-1][1]+3*p[1][0][1]+3*p[1][1][1]+p[1][2][1]))
+	middir = (-p[0][-1][0]-p[1][0][0]+p[1][1][0]+p[1][2][0],
+	-p[0][-1][1]-p[1][0][1]+p[1][1][1]+p[1][2][1])
+	midside = pointright(mid,middir,r)
+	if (p[1][0][0]-p[0][-1][0] == 0) and (p[1][0][1]-p[0][-1][1] == 0) \
+	and (p[1][1][0]-p[1][2][0] == 0) and (p[1][1][1]-p[1][2][1] == 0): 
+		# this means both control points lie on the start and end point
+		# hence the path must be a straight line
+		xstartdir = p[1][2][0]-p[0][-1][0]
+		ystartdir = p[1][2][1]-p[0][-1][1]
+		xenddir = p[1][2][0]-p[0][-1][0]
+		yenddir = p[1][2][1]-p[0][-1][1]
+	elif (p[1][0][0]-p[0][-1][0] == 0) and (p[1][0][1]-p[0][-1][1] == 0):
+		# the first control point lies on the start point
+		xstartdir = p[0][-1][0]-2*p[1][0][0]+p[1][1][0] # proportional to second derivative
+		ystartdir = p[0][-1][1]-2*p[1][0][1]+p[1][1][1]
+		xenddir = p[1][2][0]-p[1][1][0]
+		yenddir = p[1][2][1]-p[1][1][1]
+	elif (p[1][1][0]-p[1][2][0] == 0) and (p[1][1][1]-p[1][2][1] == 0):
+		# the second control point lies on the end point
+		xstartdir = p[1][0][0]-p[0][-1][0]
+		ystartdir = p[1][0][1]-p[0][-1][1]
+		xenddir = p[1][2][0]-2*p[1][1][0]+p[1][0][0]
+		yenddir = p[1][2][1]-2*p[1][1][1]+p[1][0][1]
+	else:
+		xstartdir = p[1][0][0]-p[0][-1][0]
+		ystartdir = p[1][0][1]-p[0][-1][1]
+		xenddir = p[1][2][0]-p[1][1][0]
+		yenddir = p[1][2][1]-p[1][1][1]
+	start = ( p[0][-1][0]+ystartdir
+	/(xstartdir**2+ystartdir**2)**.5*r ,
+	p[0][-1][1]-xstartdir
+	/(xstartdir**2+ystartdir**2)**.5*r )
+	end = ( p[1][2][0]+yenddir
+	/(xenddir**2+yenddir**2)**.5*r ,
+	p[1][2][1]-xenddir
+	/(xenddir**2+yenddir**2)**.5*r )
+	return bezierinterpolate(start,(xstartdir,ystartdir),midside,end,(xenddir,yenddir))
 		
 # own postscript interpreter for a postscript file "eps" 
 # into the glyph "glyph"
@@ -274,8 +387,8 @@ def import_ps(eps,glyph):
 						pen_y = abs(linewidth*ctm[3]/math.cos(alpha))
 						templayer = fontforge.layer()
 						templayer += contour
+						templayer.round(100)
 						if not (pen_x == 0 or pen_y == 0):
-							templayer.round(100)
 							if stroke_follows_fill:
 								templayer.stroke("eliptical",\
 								pen_x,pen_y,alpha,linecap,linejoin,\
