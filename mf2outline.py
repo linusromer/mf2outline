@@ -141,10 +141,16 @@ def veclen(a):
 def vecnorm(a):
 	return (a[0]/veclen(a),a[1]/veclen(a))
 	
+	
 # scale a vector a such that it has length l
 # (if l is negative, it will be in opposite direction)
 def vecscaleto(a,l):
 	return (a[0]/veclen(a)*l,a[1]/veclen(a)*l)
+
+# directed angle from vector a to b (inbetween 0 and 360)	
+def vecangle(a,b):
+	return math.degrees(math.atan2(a[0]*b[1]-a[1]*b[0],
+	a[0]*b[0]+a[1]*b[1])) % 360
 
 # returns a points right of point p where right
 # means rectangular to direction d in distance r
@@ -232,6 +238,29 @@ def beziersidepath(p,r):
 	p[1][2][1]-xenddir
 	/(xenddir**2+yenddir**2)**.5*r )
 	return bezierinterpolate(start,(xstartdir,ystartdir),midside,end,(xenddir,yenddir))
+	
+# bezierjoin returns the join of two bezierpaths
+def bezierjoin(first,second):
+	if first[-1][-1] == second[0][0]: 
+		# the last point of the first path equals the first
+		# point of the second path
+		return first + second[1:]
+	else:
+		return first + second
+
+# bezierarc returns a bezierpath which is a part of a circle
+# around center c with the radius r starting in direction s
+# and ending in direction e
+def bezierarc(c,s,e,r):
+	if vecangle(s,e) <= 90: # not more than a quarter circle
+		mid = vecadd(c,vecscaleto(vecadd(vecnorm(s),vecscaleto(e,-1)),r))
+		start = pointright(c,s,r)
+		end = pointright(c,e,r)
+		return bezierinterpolate(start,s,mid,end,e)
+	else:
+		middir = pointright((0,0),vecadd(vecnorm(s),vecscaleto(e,-1)),-1) 
+		return bezierjoin(bezierarc(c,s,middir,r),
+		bezierarc(c,middir,e,r))
 		
 # own postscript interpreter for a postscript file "eps" 
 # into the glyph "glyph"
