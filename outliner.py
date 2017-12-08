@@ -29,10 +29,10 @@ def vecnorm(a):
 def vecscaleto(a,l):
 	return (a[0]/veclen(a)*l,a[1]/veclen(a)*l)
 
-# directed angle from vector a to b (inbetween 0 and 360)	
+# directed angle from vector a to b (inbetween -180 and 180)	
 def vecangle(a,b):
 	return math.degrees(math.atan2(a[0]*b[1]-a[1]*b[0],
-	a[0]*b[0]+a[1]*b[1])) % 360
+	a[0]*b[0]+a[1]*b[1]))
 
 # returns a points right of point p where right
 # means rectangular to direction d in distance r
@@ -136,7 +136,7 @@ def bezierjoin(first,second):
 # around center c with the radius r starting in direction s
 # and ending in direction e
 def bezierarc(c,s,e,r):
-	if vecangle(s,e) <= 90: # not more than a quarter circle
+	if (vecangle(s,e) % 360) <= 90: # not more than a quarter circle
 		mid = vecadd(c,vecscaleto(vecadd(vecnorm(s),vecscaleto(e,-1)),r))
 		start = pointright(c,s,r)
 		end = pointright(c,e,r)
@@ -195,7 +195,7 @@ def bezierrightpath(p,r):
 				else: # assume a straight line
 					enddir = vecdiff(p[i-1][-1],p[i][0])
 			elif len(p[i+1]) == 3: # cubic bezier path follows
-				enddir = vecdiff(p[i+1][1],p[i+1][0])
+				enddir = vecdiff(p[i+1][0],p[i][-1])
 			else: # assume that a straight line follows
 				enddir = vecdiff(p[i+1][0],p[i][-1])
 			#if not abs(startdir[0]*enddir[1]-enddir[0]*startdir[1])<0.0001: # if not nearly same direction
@@ -203,20 +203,66 @@ def bezierrightpath(p,r):
 			outline += bezierarc(p[i][-1],startdir,enddir,r)
 	return outline
 	# this must be changed: check at the last point, if the outline is closed or not
+	
+# Returns a primitive approximate of the winding number of a path p.
+# (Approximation will be exact, if each bezier path segment is not
+# self intersection, which normally does not occur.)
+# E.g. if c is a circle that turns counterclockwise, 
+# it returns 360 (-360 for clockwise).
+# Half a circle would return 180 (-180 for clockwise).
+def bezierwindingnumer(p):
+	angle = 0.0
+	l = len(p)
+	for i in range(0,l):
+		if i == 0 and p[0][-1] == p[-1][-1]: # cyclic
+			a = vecdiff(p[i][-1],p[(i-2)%l][-1])
+		else:
+			a = vecdiff(p[i][-1],p[(i-1)%l][-1])
+		b = vecdiff(p[(i+1)%l][-1],p[i][-1])
+		if not (veclen(a) == 0) and not (veclen(b) == 0):
+			angle += vecangle(a,b)
+	return angle/360
+
+# bezierouterpath returns the outer part of an outline of a 
+# (list) path p when drawn with a circular pen of radius r
+# if p is open, the returned path will be the complete outline,
+# else the returned path will be only the outer part
+def bezierouterpath(p,r):
+	if (p[0][0][0] == p[-1][-1][0]) and (p[0][0][1] == p[-1][-1][1]): # cyclic
+		if bezierwindingnumer(p) > 0: # 
+			return bezierrightpath(p,r) # this is not perfect yet
+		else:
+			return bezierrightpath(bezierreverse(p),r) # this is not perfect yet
+	else: # not cyclic
+		return bezierjoin(bezierrightpath(p,r),bezierrightpath(bezierreverse(p),r))
+		
+
+# bezierinnerpath returns the outer part of an outline of a 
+# (list) path p when drawn with a circular pen of radius r
+# if p is open, the returned path will be the complete outline,
+# else the returned path will be only the inner part
+def bezierinnerpath(p,r):
+	return bezierouterpath(bezierreverse(p),r)
 
 
 #print bezierarc((0,0),(0,1),(-1,-1),10)
 trialpath = [[(1,1)], [(2,2), (3,3), (4,4)], [(5,5), (6,6), (7,7)],[(8,8)],[(9,9)]]
 closedpath = [[(0,0)],[(100,0),(200,100),(200,200)],[(0,200)],[(0,0)]]
-openpath = [[(0,0)],[(100,0),(200,100),(200,200)],[(0,200)],[(0,300)]]
+openpath = [[(0,0)],[(100,0),(200,100),(200,200)],[(0,200)],[(0,100)]]
 #print bezierreverse(trialpath)
 #print bezierfontforge(trialpath)
 #print beziersidesegment((0,0),(100,0),(200,100),(200,200),30)
 
-print bezierrightpath(openpath,30)
+#print bezierrightpath(openpath,30)
+
+#print bezierwindingnumer(closedpath)
+#print bezierwindingnumer(bezierreverse(closedpath))
 
 font = fontforge.font()
 font.createChar(65)
+font.createChar(66)
 #font["A"].foreground += bezierfontforge(closedpath)
-font["A"].foreground += bezierfontforge(bezierrightpath(closedpath,30))
+#font["A"].foreground += bezierfontforge(bezierrightpath(closedpath,30))
+font["A"].foreground += bezierfontforge(bezierouterpath(openpath,30))
+font["B"].foreground += bezierfontforge(openpath)
 font.save("outliner.sfd")

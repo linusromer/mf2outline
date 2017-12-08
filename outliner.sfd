@@ -1,0 +1,145 @@
+SplineFontDB: 3.0
+FontName: Untitled1
+FullName: Untitled1
+FamilyName: Untitled1
+Weight: Regular
+Copyright: Copyright (c) 2017, xx,,,
+UComments: "2017-12-8: Created with FontForge (http://fontforge.org)"
+Version: 001.000
+ItalicAngle: 0
+UnderlinePosition: -100
+UnderlineWidth: 50
+Ascent: 800
+Descent: 200
+InvalidEm: 0
+LayerCount: 2
+Layer: 0 0 "Back" 1
+Layer: 1 0 "Fore" 0
+XUID: [1021 424 -1346319909 3138018]
+OS2Version: 0
+OS2_WeightWidthSlopeOnly: 0
+OS2_UseTypoMetrics: 1
+CreationTime: 1512767093
+ModificationTime: 1512767358
+OS2TypoAscent: 0
+OS2TypoAOffset: 1
+OS2TypoDescent: 0
+OS2TypoDOffset: 1
+OS2TypoLinegap: 0
+OS2WinAscent: 0
+OS2WinAOffset: 1
+OS2WinDescent: 0
+OS2WinDOffset: 1
+HheadAscent: 0
+HheadAOffset: 1
+HheadDescent: 0
+HheadDOffset: 1
+OS2Vendor: 'PfEd'
+DEI: 91125
+Encoding: ISO8859-1
+UnicodeInterp: none
+NameList: AGL For New Fonts
+DisplaySize: -48
+AntiAlias: 1
+FitToEm: 0
+WinInfo: 0 29 12
+BeginChars: 256 4
+
+StartChar: A
+Encoding: 65 65 0
+Width: 1000
+VWidth: 0
+Flags: H
+LayerCount: 2
+Fore
+SplineSet
+0 -30 m 0
+ 116.56854248 -30 230 83.4314575195 230 200 c 1
+ 230 200 l 1
+ 230 216.56854248 216.56854248 230 200 230 c 2
+ 0 230 l 2
+ -16.5685424805 230 -30 216.56854248 -30 200 c 2
+ -30 100 l 2
+ -30 83.4314575195 -16.5685424805 70 0 70 c 0
+ 16.5685424805 70 30 83.4314575195 30 100 c 2
+ 30 200 l 2
+ 30 212.133865356 22.6907348633 223.072952271 11.4805030823 227.716384888 c 0
+ 0.270271271467 232.359817505 -12.633263588 229.793136597 -21.2132034302 221.21321106 c 0
+ -29.7931442261 212.633270264 -32.3598175049 199.729736328 -27.716386795 188.519500732 c 0
+ -23.0729560852 177.309265137 -12.1338672638 170 0 170 c 2
+ 200 170 l 2
+ 212.133865356 170 223.072952271 177.309265137 227.716384888 188.519500732 c 0
+ 232.359817505 199.729736328 229.793136597 212.633270264 221.21321106 221.21321106 c 0
+ 212.633270264 229.793136597 199.729736328 232.359817505 188.519500732 227.716384888 c 0
+ 177.309265137 223.072952271 170 212.133865356 170 200 c 0
+ 170 116.56854248 83.4314575195 30 0 30 c 1
+ 0 30 l 1
+ -16.5685424805 30 -30 16.5685424805 -30 0 c 0
+ -30 -16.5685424805 -16.5685424805 -30 0 -30 c 0
+EndSplineSet
+EndChar
+
+StartChar: B
+Encoding: 66 66 1
+Width: 1000
+VWidth: 0
+Flags: H
+LayerCount: 2
+Fore
+SplineSet
+0 0 m 0
+ 100 0 200 100 200 200 c 1
+ 0 200 l 1
+ 0 100 l 1025
+EndSplineSet
+EndChar
+
+StartChar: C
+Encoding: 67 67 2
+Width: 1000
+VWidth: 0
+Flags: HW
+LayerCount: 2
+Fore
+SplineSet
+-30 0 m 0
+ -30 16 -16 30 0 30 c 0
+ 72 30 148 97 166 170 c 1
+ 30 170 l 1
+ 30 100 l 2
+ 30 84 16 70 0 70 c 0
+ -16 70 -30 84 -30 100 c 2
+ -30 200 l 2
+ -30 213 -18 230 0 230 c 2
+ 200 230 l 2
+ 213 230 230 218 230 200 c 0
+ 230 82 118 -30 0 -30 c 0
+ -16 -30 -30 -16 -30 0 c 0
+EndSplineSet
+EndChar
+
+StartChar: D
+Encoding: 68 68 3
+Width: 1000
+VWidth: 0
+Flags: HW
+LayerCount: 2
+Fore
+SplineSet
+0 230 m 2
+ -17 230 -30 217 -30 200 c 2
+ -30 100 l 2
+ -30 83 -17 70 0 70 c 0
+ 17 70 30 83 30 100 c 2
+ 30 170 l 1
+ 166 170 l 1
+ 149 97 73 30 0 30 c 0
+ -17 30 -30 17 -30 0 c 0
+ -30 -17 -17 -30 0 -30 c 0
+ 116 -30 230 84 230 200 c 0
+ 230 217 217 230 200 230 c 2
+ 0 230 l 2
+EndSplineSet
+EndChar
+EndChars
+EndSplineFont
