@@ -143,19 +143,22 @@ def bezierinterpolate(za,dira,zb,zc,dirc):
 	yc = float(zc[1])
 	xdirc = float(dirc[0])
 	ydirc = float(dirc[1])
-	xp=(-((-xdira*ydirc-3*ydira*xdirc)*xa+4*xdira*xdirc*ya+xdira
-	*(4*xdirc*yc-8*xdirc*yb-4*ydirc*xc+8*ydirc*xb))
-	/(3*ydira*xdirc-3*xdira*ydirc))
-	yp=(-(-4*ydira*ydirc*xa+(3*xdira*ydirc+ydira*xdirc)*ya+ydira
-	*(4*xdirc*yc-8*xdirc*yb-4*ydirc*xc+8*ydirc*xb))
-	/(3*ydira*xdirc-3*xdira*ydirc))
-	xq=((-4*ydira*xdirc*xa+ydira*(8*xdirc*xb-xdirc*xc)
-	+4*xdira*xdirc*ya+xdira*(4*xdirc*yc-8*xdirc*yb-3*ydirc*xc))
-	/(3*ydira*xdirc-3*xdira*ydirc))
-	yq=((-4*ydira*ydirc*xa+4*xdira*ydirc*ya
-	+ydira*(3*xdirc*yc-4*ydirc*xc+8*ydirc*xb)
-	+xdira*(ydirc*yc-8*ydirc*yb))/(3*ydira*xdirc-3*xdira*ydirc))
-	return [[za],[(xp,yp),(xq,yq),zc]]
+	if ydira*xdirc == xdira*ydirc: # this may be a straight line
+		return [[za],[zc]]
+	else:
+		xp=(-((-xdira*ydirc-3*ydira*xdirc)*xa+4*xdira*xdirc*ya+xdira
+		*(4*xdirc*yc-8*xdirc*yb-4*ydirc*xc+8*ydirc*xb))
+		/(3*ydira*xdirc-3*xdira*ydirc))
+		yp=(-(-4*ydira*ydirc*xa+(3*xdira*ydirc+ydira*xdirc)*ya+ydira
+		*(4*xdirc*yc-8*xdirc*yb-4*ydirc*xc+8*ydirc*xb))
+		/(3*ydira*xdirc-3*xdira*ydirc))
+		xq=((-4*ydira*xdirc*xa+ydira*(8*xdirc*xb-xdirc*xc)
+		+4*xdira*xdirc*ya+xdira*(4*xdirc*yc-8*xdirc*yb-3*ydirc*xc))
+		/(3*ydira*xdirc-3*xdira*ydirc))
+		yq=((-4*ydira*ydirc*xa+4*xdira*ydirc*ya
+		+ydira*(3*xdirc*yc-4*ydirc*xc+8*ydirc*xb)
+		+xdira*(ydirc*yc-8*ydirc*yb))/(3*ydira*xdirc-3*xdira*ydirc))
+		return [[za],[(xp,yp),(xq,yq),zc]]
 	
 # parallel of a cubic bezier path p (s,cs,ce,e)
 # where s = start of p, cs = starting control of p
@@ -332,45 +335,42 @@ def import_ps(eps,glyph):
 		linecap = "round"
 		linejoin = "round"
 		miterlimit = 10
-		stroke_follows_fill = False 
-		gsave_contour = fontforge.contour() # contour that is saved by gsave
+		contour = []
+		gsave_contour = [] # (list) bezier path that is saved by gsave
 		gsave_ctm = [1.0,0.0,0.0,1.0,0.0,0.0] # current transformation matrix that is saved by gsave
 		gsave_is_white = False # "color" saved by gsave
-		contour = fontforge.contour() # just declaring
+		contour_is_closed = False
 		#
 		# okay, let's start:
 		for line in epsfile:
 			if line[0] != "%" and len(line)>0: # ignore comments
-				if "gsave fill grestore stroke" in line: # this happens just so often, so we treat it as special case
-					stroke_follows_fill = True # pay attention...
 				words = line.split()
 				for word in words: # go through the words
 					# showpage will have no effect
 					if isolate_number(word) != None:
 						stack.append(isolate_number(word))
 					elif word == "newpath":
-						contour = fontforge.contour()
-					elif word == "moveto":
-						contour.moveTo(stack[len(stack)-2],stack[len(stack)-1])
-						stack = stack[:(len(stack)-2)]
-					elif word == "lineto":
-						contour.lineTo(stack[len(stack)-2],stack[len(stack)-1])
-						stack = stack[:(len(stack)-2)]
+						contour = [] # (list) bezier path 
+					elif (word == "moveto") or (word == "lineto"):
+						contour.append([(stack[-2],stack[-1])])
+						stack = stack[:-2]
 					elif word == "curveto":
-						contour.cubicTo(stack[len(stack)-6],stack[len(stack)-5],\
-						stack[len(stack)-4],stack[len(stack)-3],\
-						stack[len(stack)-2],stack[len(stack)-1])
-						stack = stack[:(len(stack)-6)]
+						contour.append([
+						(stack[-6],stack[-5]),
+						(stack[-4],stack[-3]),
+						(stack[-2],stack[-1])
+						])
+						stack = stack[:-6]
 					elif word == "closepath":
-						contour.closed = True
+						contour_is_closed = True
 					elif word == "setrgbcolor":
-						if stack[len(stack)-1] == 1 and \
-						stack[len(stack)-2] == 1 and \
-						stack[len(stack)-3] == 1:
+						if stack[-1] == 1 and \
+						stack[-2] == 1 and \
+						stack[-3] == 1:
 							is_white = True
 						else:
 							is_white = False
-						stack = stack[:(len(stack)-3)]
+						stack = stack[:-3]
 					elif word == "setlinewidth":
 						linewidth = stack.pop()
 					elif word == "setdash":
@@ -431,12 +431,16 @@ def import_ps(eps,glyph):
 						stack[len(stack)-1]=int(stack[len(stack)-1])
 					elif word == "pop":
 						stack.pop()
-					elif word == "fill" and not stroke_follows_fill:
+					elif word == "fill":
+						# remember, that mf2outline.mp assures that
+						# every contour is clockwise
+						tempcontour = fontforge.contour()
+						tempcontour = bezierfontforge(contour)
 						templayer = fontforge.layer()
-						templayer += contour
-						templayer.round(100)
+						templayer += tempcontour
+						#templayer.round(100)
 						if is_white:
-							#layer.exclude(templayer)	
+							# actually layer.exclude(templayer), but
 							# exclude does not work properly in fontforge
 							# so we intersect the templayer with the layer
 							# and exclude that from the layer by making
@@ -448,7 +452,7 @@ def import_ps(eps,glyph):
 									templayer[i].reverseDirection()
 						layer += templayer
 						layer.removeOverlap()
-						layer.round(100)
+						#layer.round(100)
 					elif word == "stroke":
 						# We have to determine the angle and the 
 						# axis of the ellipse that is the product of
@@ -465,19 +469,10 @@ def import_ps(eps,glyph):
 							alpha = math.atan(ctm[1]/ctm[0])
 						pen_x = abs(linewidth*ctm[0]/math.cos(alpha))
 						pen_y = abs(linewidth*ctm[3]/math.cos(alpha))
+						tempcontour = fontforge.contour()
+						tempcontour = bezierfontforge(bezieroutline(contour,pen_x,pen_y,alpha))
 						templayer = fontforge.layer()
-						templayer += contour
-						templayer.round(100)
-						if not (pen_x == 0 or pen_y == 0):
-							if stroke_follows_fill:
-								templayer.stroke("eliptical",\
-								pen_x,pen_y,alpha,linecap,linejoin,\
-								"removeinternal")
-							else:
-								templayer.stroke("eliptical",\
-								pen_x,pen_y,alpha,linecap,linejoin)
-						if stroke_follows_fill: # this is need because of the "if not" above
-							stroke_follows_fill = False
+						templayer += tempcontour
 						if is_white:
 							#layer.exclude(templayer)	
 							# exclude does not work properly in fontforge
@@ -485,17 +480,17 @@ def import_ps(eps,glyph):
 							# and exclude that from the layer by making
 							# it counterclockwise and removeOverlap()
 							#layer = layer + templayer			
-							print "do nothing"		
+							print "Should I really implement this?"		
 						else:
 							layer = layer + templayer
 						layer.removeOverlap()
-						layer.round(100)
-					elif word == "gsave" and not stroke_follows_fill:
-						gsave_contour = contour.dup() 
+						#layer.round(100)
+					elif word == "gsave":
+						gsave_contour = list(contour) # clone contour 
 						gsave_ctm = ctm 
 						gsave_is_white = is_white
-					elif word == "grestore" and not stroke_follows_fill:
-						contour = gsave_contour.dup() 
+					elif word == "grestore":
+						contour = list(gsave_contour)
 						ctm = gsave_ctm 
 						is_white = gsave_is_white
 		glyph.foreground = layer
@@ -1448,9 +1443,6 @@ if __name__ == "__main__":
 			font.autoHint()
 		elif args.ffscript == "": # no user defined script
 			font.selection.all()
-			#if args.veryverbose:
-			#	print("Rounding to 1/100 unit")
-			#font.round(100)
 			if args.veryverbose:
 				print("Removing overlaps")
 			font.removeOverlap()
@@ -1463,6 +1455,7 @@ if __name__ == "__main__":
 			if args.veryverbose:
 				print("Adding extrema")
 			font.addExtrema()
+			font.round(100) # otherwise, extrema may be ugly
 			if args.veryverbose:
 				print("Simplifying")
 			font.simplify()
