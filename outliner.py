@@ -2,6 +2,29 @@
 
 import math,fontforge
 
+
+# make a homogeneous transformation m*(x,y,1) or
+# truncated matrix m*(x,y)
+# and return the transformed x and y
+def homogeneous(m,x,y):
+	if len(m)==4: # truncated matrix (dtransform)
+		return [m[0]*x+m[2]*y,m[1]*x+m[3]*y]
+	elif len(m)==6: # general case
+		return [m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]]
+	else:
+		return [x,y] # wrong matrix dimensions, no change
+
+# inverts the transformationmatrix
+def invertmatrix(m):
+	if len(m)>3:
+		c = 1.0/(m[0]*m[3]-m[1]*m[2]) # determinant coefficient
+	if len(m)==4: # truncated matrix (dinvert)
+		return [c*m[3],-c*m[1],-c*m[2],c*m[0]]
+	elif len(m)==6: # general case
+		return [c*m[3],-c*m[1],-c*m[2],c*m[0],-m[4],-m[5]]
+	else:
+		return m # wrong matrix dimensions, no change
+
 # For the own postscript interpreter we use the following 
 # convention for cubic bezier paths:
 # (0,1)--(3,4)..controls (1,2) and (-2,7)..(8,5)--(2,9)
@@ -185,8 +208,8 @@ def bezierrightpath(p,r):
 				startdir = vecdiff(p[i][2],p[i][1]) # for the following arc
 			elif len(p[i]) == 1: # straight line
 				if i == 1: # include initial point
-					outline += [pointright(p[i-1][0],vecdiff(p[i][0],p[i-1][-1]),r)]
-				outline += [pointright(p[i][0],vecdiff(p[i][0],p[i-1][-1]),r)]
+					outline += [[pointright(p[i-1][0],vecdiff(p[i][0],p[i-1][-1]),r)]]
+				outline += [[pointright(p[i][0],vecdiff(p[i][0],p[i-1][-1]),r)]]
 				startdir = vecdiff(p[i][0],p[i-1][-1]) # for the following arc
 			# append a round joint:
 			if i == len(p)-1: # last point of the path, so enddir is the reverse direction
@@ -198,71 +221,48 @@ def bezierrightpath(p,r):
 				enddir = vecdiff(p[i+1][0],p[i][-1])
 			else: # assume that a straight line follows
 				enddir = vecdiff(p[i+1][0],p[i][-1])
-			#if not abs(startdir[0]*enddir[1]-enddir[0]*startdir[1])<0.0001: # if not nearly same direction
-			#the upper should also check if not in perfect reverse direction
-			outline += bezierarc(p[i][-1],startdir,enddir,r)
+			if not (abs(startdir[0]*enddir[1]-enddir[0]*startdir[1])<0.00001 \
+			and (math.copysign(1,enddir[0]) == math.copysign(1,startdir[0])) \
+			and (math.copysign(1,enddir[1]) == math.copysign(1,startdir[1]))): 
+				# if not nearly same direction (reverse direction is okay)
+				outline += bezierarc(p[i][-1],startdir,enddir,r)
 	return outline
-	# this must be changed: check at the last point, if the outline is closed or not
 	
-# Returns a primitive approximate of the winding number of a path p.
-# (Approximation will be exact, if each bezier path segment is not
-# self intersection, which normally does not occur.)
-# E.g. if c is a circle that turns counterclockwise, 
-# it returns 360 (-360 for clockwise).
-# Half a circle would return 180 (-180 for clockwise).
-def bezierwindingnumer(p):
-	angle = 0.0
-	l = len(p)
-	for i in range(0,l):
-		if i == 0 and p[0][-1] == p[-1][-1]: # cyclic
-			a = vecdiff(p[i][-1],p[(i-2)%l][-1])
-		else:
-			a = vecdiff(p[i][-1],p[(i-1)%l][-1])
-		b = vecdiff(p[(i+1)%l][-1],p[i][-1])
-		if not (veclen(a) == 0) and not (veclen(b) == 0):
-			angle += vecangle(a,b)
-	return angle/360
+# beziercircularoutline returns the outline of a 
+# (list) path p when drawn with a circular pen of diameter d
+# the list has to be reversed, as fontforge determines outer = clockwise
+def beziercircularoutline(p,d):
+	return bezierreverse(bezierjoin(bezierrightpath(p,0.5*d),
+	bezierrightpath(bezierreverse(p),0.5*d)))
 
-# bezierouterpath returns the outer part of an outline of a 
-# (list) path p when drawn with a circular pen of radius r
-# if p is open, the returned path will be the complete outline,
-# else the returned path will be only the outer part
-def bezierouterpath(p,r):
-	if (p[0][0][0] == p[-1][-1][0]) and (p[0][0][1] == p[-1][-1][1]): # cyclic
-		if bezierwindingnumer(p) > 0: # 
-			return bezierrightpath(p,r) # this is not perfect yet
-		else:
-			return bezierrightpath(bezierreverse(p),r) # this is not perfect yet
-	else: # not cyclic
-		return bezierjoin(bezierrightpath(p,r),bezierrightpath(bezierreverse(p),r))
-		
+# bezierhomogeneous transforms the bezier path p homogeneously with
+# the transformation matrix m
+def bezierhomogeneous(p,m):
+	transformed = []
+	for i in range(0,len(p)):
+		transformed.append([])
+		for j in range(0,len(p[i])):
+			transformedpoint = homogeneous(m,p[i][j][0],p[i][j][1])
+			transformed[i].append((transformedpoint[0],transformedpoint[1]))
+	return transformed
+	
+# bezieroutline returns the outline of a (list) path p when drawn with a
+# elliptical pen of a horizontal diameter dx and a vertical diameter dy
+# rotated by the angle alpha
+def bezieroutline(p,dx,dy,alpha):
+	ca = math.cos(math.radians(alpha))
+	sa = math.sin(math.radians(alpha))
+	m = [ca,sa,-sa*dy/dx,ca*dy/dx] # transformation matrix (squeeze and rotate)
+	return bezierhomogeneous(beziercircularoutline(
+	bezierhomogeneous(p,invertmatrix(m)),dx),m)
 
-# bezierinnerpath returns the outer part of an outline of a 
-# (list) path p when drawn with a circular pen of radius r
-# if p is open, the returned path will be the complete outline,
-# else the returned path will be only the inner part
-def bezierinnerpath(p,r):
-	return bezierouterpath(bezierreverse(p),r)
-
-
-#print bezierarc((0,0),(0,1),(-1,-1),10)
-trialpath = [[(1,1)], [(2,2), (3,3), (4,4)], [(5,5), (6,6), (7,7)],[(8,8)],[(9,9)]]
 closedpath = [[(0,0)],[(100,0),(200,100),(200,200)],[(0,200)],[(0,0)]]
-openpath = [[(0,0)],[(100,0),(200,100),(200,200)],[(0,200)],[(0,100)]]
-#print bezierreverse(trialpath)
-#print bezierfontforge(trialpath)
-#print beziersidesegment((0,0),(100,0),(200,100),(200,200),30)
-
-#print bezierrightpath(openpath,30)
-
-#print bezierwindingnumer(closedpath)
-#print bezierwindingnumer(bezierreverse(closedpath))
+openpath = [[(0,0)],[(100,0),(200,100),(200,200)],[(0,200)],[(0,150)],[(0,100)]]
 
 font = fontforge.font()
 font.createChar(65)
 font.createChar(66)
-#font["A"].foreground += bezierfontforge(closedpath)
-#font["A"].foreground += bezierfontforge(bezierrightpath(closedpath,30))
-font["A"].foreground += bezierfontforge(bezierouterpath(openpath,30))
-font["B"].foreground += bezierfontforge(openpath)
+font["A"].foreground += bezierfontforge(beziercircularoutline(openpath,30))
+font["B"].foreground += bezierfontforge(bezieroutline(closedpath,40,20,30))
+
 font.save("outliner.sfd")
