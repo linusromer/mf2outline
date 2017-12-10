@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20171210";
+string base_name, base_version; base_name="mf2outline"; base_version="20171029";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -362,10 +362,7 @@ miterlimit:=10;
 pen currentpen;
 picture currentpicture;
 
-% ----- start of modifications by Linus Romer -----
-def fill expr c = addto currentpicture contour if turningnumber c >= 0: 
-  reverse fi c t_ pc_ 
-enddef;
+def fill expr c = addto currentpicture contour c t_ pc_ enddef;
 def draw expr p =
   addto currentpicture
   if picture p:
@@ -376,13 +373,11 @@ def draw expr p =
   pc_
 enddef;
 def filldraw expr c =
-  addto currentpicture contour if turningnumber c >= 0: 
-  reverse fi c t_ withpen currentpen
+  addto currentpicture contour c t_ withpen currentpen
   pc_ enddef;
 def drawdot expr z =
   addto currentpicture contour makepath currentpen shifted z
   t_ pc_ enddef;
-% ----- end of modifications by Linus Romer -----
 
 def unfill expr c = fill c withcolor background enddef;
 def undraw expr p = draw p withcolor background enddef;

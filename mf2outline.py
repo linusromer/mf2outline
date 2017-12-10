@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20171210
+#mf2outline version 20171121
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -242,6 +242,25 @@ def bezierreverse(p):
 		overlap = p[l-1-i][-2::-1]
 	return reverse
 	
+# returns an approximation of the windingnumer of a 
+# (list) bezier path p 
+# the approximation is exact, if the beziersegments are not
+# self-intersecting (which normally not happens when defining fonts)
+def windingnumber(p):
+	flat = [] # first, we flatten the point list
+	for i in range(0,len(p)):
+		for j in range(0,len(p[i])):
+			flat.append(p[i][j])
+	angle = 0;
+	for i in range(1,len(flat)-1):
+		angle += vecangle(vecdiff(flat[i],flat[i-1]),
+		vecdiff(flat[i+1],flat[i]))
+	if (flat[-1][0] == flat[0][0]) and (flat[-1][1] == flat[0][1]): # cyclic
+		angle += vecangle(vecdiff(flat[-1],flat[-2]),
+		vecdiff(flat[1],flat[0]))
+	return angle/360.0
+		
+	
 # bezierfontforge takes a (list) path p
 # and returns a fontforge contour
 def bezierfontforge(p):
@@ -434,8 +453,11 @@ def import_ps(eps,glyph):
 					elif word == "pop":
 						stack.pop()
 					elif word == "fill":
-						# remember, that mf2outline.mp assures that
+						if windingnumber(contour) > 0:
+							contour = bezierreverse(contour) # assures that
 						# every contour is clockwise
+						if code == 61:
+							print windingnumber(contour)
 						tempcontour = fontforge.contour()
 						tempcontour = bezierfontforge(contour)
 						if (contour[0][0][0] == contour[-1][-1][0]) and \
@@ -475,6 +497,7 @@ def import_ps(eps,glyph):
 						tempcontour = fontforge.contour()
 						tempcontour = bezierfontforge(bezieroutline(contour,pen_x,pen_y,alpha))
 						tempcontour.closed = True # the outline should be closed anyway!
+						# (and the contour outline will automatically be clockwise)
 						templayer = fontforge.layer()
 						templayer += tempcontour
 						if is_white:
