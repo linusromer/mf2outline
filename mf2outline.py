@@ -103,7 +103,6 @@ def veclen(a):
 def vecnorm(a):
 	return (a[0]/veclen(a),a[1]/veclen(a))
 	
-	
 # scale a vector a such that it has length l
 # (if l is negative, it will be in opposite direction)
 def vecscaleto(a,l):
@@ -118,8 +117,11 @@ def vecangle(a,b):
 # means rectangular to direction d in distance r
 # (choose r negative for a left point)
 def pointright(p,d,r):
-	dscaled = vecscaleto(d,r)
-	return (p[0]+dscaled[1],p[1]-dscaled[0])
+	if (d[0] == 0) and (d[1] == 0) or (r == 0):
+		return p
+	else:
+		dscaled = vecscaleto(d,r)
+		return (p[0]+dscaled[1],p[1]-dscaled[0])
 
 # bezierinterpolate returns a bezier path as list (see the convention
 # as above) which starts in point za, heading in direction dira, 
@@ -302,7 +304,8 @@ def bezierrightpath(p,r):
 				enddir = vecdiff(p[i+1][0],p[i][-1])
 			if not (abs(startdir[0]*enddir[1]-enddir[0]*startdir[1])<0.00001 \
 			and (math.copysign(1,enddir[0]) == math.copysign(1,startdir[0])) \
-			and (math.copysign(1,enddir[1]) == math.copysign(1,startdir[1]))): 
+			and (math.copysign(1,enddir[1]) == math.copysign(1,startdir[1]))
+			or veclen(enddir) == 0 or veclen(startdir) == 0): 
 				# if not nearly same direction (reverse direction is okay)
 				outline += bezierarc(p[i][-1],startdir,enddir,r)
 	return outline
@@ -331,9 +334,12 @@ def bezierhomogeneous(p,m):
 def bezieroutline(p,dx,dy,alpha):
 	ca = math.cos(math.radians(alpha))
 	sa = math.sin(math.radians(alpha))
-	m = [ca,sa,-sa*dy/dx,ca*dy/dx] # transformation matrix (squeeze and rotate)
-	return bezierhomogeneous(beziercircularoutline(
-	bezierhomogeneous(p,invertmatrix(m)),dx),m)
+	if dx == 0:
+		return p
+	else:
+		m = [ca,sa,-sa*dy/dx,ca*dy/dx] # transformation matrix (squeeze and rotate)
+		return bezierhomogeneous(beziercircularoutline(
+		bezierhomogeneous(p,invertmatrix(m)),dx),m)
 		
 # own postscript interpreter for a postscript file "eps" 
 # into the glyph "glyph"
