@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20171029";
+string base_name, base_version; base_name="mf2outline"; base_version="20171210";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
@@ -371,8 +371,7 @@ def draw expr p =
   if picture p:
     also p
   else:
-    doublepath if turningnumber p >= 0: 
-    reverse fi p t_ withpen currentpen
+    doublepath p t_ withpen currentpen
   fi
   pc_
 enddef;

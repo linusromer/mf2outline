@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20171121
+#mf2outline version 20171210
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -339,7 +339,6 @@ def import_ps(eps,glyph):
 		gsave_contour = [] # (list) bezier path that is saved by gsave
 		gsave_ctm = [1.0,0.0,0.0,1.0,0.0,0.0] # current transformation matrix that is saved by gsave
 		gsave_is_white = False # "color" saved by gsave
-		contour_is_closed = False
 		#
 		# okay, let's start:
 		for line in epsfile:
@@ -362,7 +361,10 @@ def import_ps(eps,glyph):
 						])
 						stack = stack[:-6]
 					elif word == "closepath":
-						contour_is_closed = True
+						if (len(contour) > 1) and \
+						(contour[0][0][0] != contour[-1][-1][0]) or \
+						(contour[0][0][1] != contour[-1][-1][1]):
+							contour.append([(contour[0][0][0],contour[0][0][1])])
 					elif word == "setrgbcolor":
 						if stack[-1] == 1 and \
 						stack[-2] == 1 and \
@@ -436,9 +438,11 @@ def import_ps(eps,glyph):
 						# every contour is clockwise
 						tempcontour = fontforge.contour()
 						tempcontour = bezierfontforge(contour)
+						if (contour[0][0][0] == contour[-1][-1][0]) and \
+						(contour[0][0][1] == contour[-1][-1][1]):
+							tempcontour.closed = True
 						templayer = fontforge.layer()
 						templayer += tempcontour
-						#templayer.round(100)
 						if is_white:
 							# actually layer.exclude(templayer), but
 							# exclude does not work properly in fontforge
@@ -451,8 +455,7 @@ def import_ps(eps,glyph):
 								if templayer[i].isClockwise():
 									templayer[i].reverseDirection()
 						layer += templayer
-						layer.removeOverlap()
-						#layer.round(100)
+						#layer.removeOverlap()
 					elif word == "stroke":
 						# We have to determine the angle and the 
 						# axis of the ellipse that is the product of
@@ -471,20 +474,22 @@ def import_ps(eps,glyph):
 						pen_y = abs(linewidth*ctm[3]/math.cos(alpha))
 						tempcontour = fontforge.contour()
 						tempcontour = bezierfontforge(bezieroutline(contour,pen_x,pen_y,alpha))
+						tempcontour.closed = True # the outline should be closed anyway!
 						templayer = fontforge.layer()
 						templayer += tempcontour
 						if is_white:
-							#layer.exclude(templayer)	
+							# actually layer.exclude(templayer), but
 							# exclude does not work properly in fontforge
 							# so we intersect the templayer with the layer
 							# and exclude that from the layer by making
 							# it counterclockwise and removeOverlap()
-							#layer = layer + templayer			
-							print "Should I really implement this?"		
-						else:
-							layer = layer + templayer
-						layer.removeOverlap()
-						#layer.round(100)
+							templayer += layer
+							templayer.intersect()
+							for i in range(0,len(templayer)):
+								if templayer[i].isClockwise():
+									templayer[i].reverseDirection()
+						layer = layer + templayer
+						#layer.removeOverlap()
 					elif word == "gsave":
 						gsave_contour = list(contour) # clone contour 
 						gsave_ctm = ctm 
@@ -1491,7 +1496,6 @@ if __name__ == "__main__":
 				print("Hinting")
 			font.autoHint()
 		else:		# user defined script
-			font.save("%s/temp.sfd" % tempdir)
 			subprocess.call(
 			['fontforge',
 			'-script',
