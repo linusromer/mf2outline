@@ -341,6 +341,52 @@ def bezieroutline(p,dx,dy,alpha):
 		return bezierhomogeneous(beziercircularoutline(
 		bezierhomogeneous(p,invertmatrix(m)),dx),m)
 		
+# bezierouteroutline returns the outer part of an 
+# outline of a (list) closed path path when drawn with a
+# elliptical pen of a horizontal diameter dx and a vertical diameter dy
+# rotated by the angle alpha
+# this is needed for METAPOSTs filldraw function 
+def bezierouteroutline(path,dx,dy,alpha):
+	if dx == 0:
+		return path
+	else:
+		r = 0.5*dx
+		ca = math.cos(math.radians(alpha))
+		sa = math.sin(math.radians(alpha))
+		m = [ca,sa,-sa*dy/dx,ca*dy/dx] # transformation matrix (squeeze and rotate)
+		if windingnumber(path) < 0: # make counterclockwise (yes, really!)
+			p = bezierhomogeneous(bezierreverse(path),invertmatrix(m))
+		else:
+			p = bezierhomogeneous(path,invertmatrix(m))
+		outline = [] 
+		for i in range(1,len(p)):
+			if (len(p[i]) == 1) or (len(p[i]) == 3):
+				if len(p[i]) == 3: # cubic bezier path
+					if i == 1: # include initial point
+						outline += beziersidesegment(p[i-1][-1],p[i][0],p[i][1],p[i][2],r)
+					else:
+						outline += beziersidesegment(p[i-1][-1],p[i][0],p[i][1],p[i][2],r)[1:]
+					startdir = vecdiff(p[i][2],p[i][1]) # for the following arc
+				elif len(p[i]) == 1: # straight line
+					if i == 1: # include initial point
+						outline += [[pointright(p[i-1][0],vecdiff(p[i][0],p[i-1][-1]),r)]]
+					outline += [[pointright(p[i][0],vecdiff(p[i][0],p[i-1][-1]),r)]]
+					startdir = vecdiff(p[i][0],p[i-1][-1]) # for the following arc
+				# append a round joint:
+				if i == len(p)-1: # last point of the path, jump to the first segment
+					enddir = vecdiff(p[1][0],p[0][0])
+				elif len(p[i+1]) == 3: # cubic bezier path follows
+					enddir = vecdiff(p[i+1][0],p[i][-1])
+				else: # assume that a straight line follows
+					enddir = vecdiff(p[i+1][0],p[i][-1])
+				if not (abs(startdir[0]*enddir[1]-enddir[0]*startdir[1])<0.00001 \
+				and (math.copysign(1,enddir[0]) == math.copysign(1,startdir[0])) \
+				and (math.copysign(1,enddir[1]) == math.copysign(1,startdir[1]))
+				or veclen(enddir) == 0 or veclen(startdir) == 0): 
+					# if not nearly same direction (reverse direction is okay)
+					outline += bezierarc(p[i][-1],startdir,enddir,r)
+		return bezierreverse(bezierhomogeneous(outline,m))
+		
 # own postscript interpreter for a postscript file "eps" 
 # into the glyph "glyph"
 def import_ps(eps,glyph):
@@ -361,6 +407,7 @@ def import_ps(eps,glyph):
 		linejoin = "round"
 		miterlimit = 10
 		contour = []
+		stroke_follows_fill = False 
 		gsave_contour = [] # (list) bezier path that is saved by gsave
 		gsave_ctm = [1.0,0.0,0.0,1.0,0.0,0.0] # current transformation matrix that is saved by gsave
 		gsave_is_white = False # "color" saved by gsave
@@ -368,6 +415,8 @@ def import_ps(eps,glyph):
 		# okay, let's start:
 		for line in epsfile:
 			if line[0] != "%" and len(line)>0: # ignore comments
+				if "gsave fill grestore stroke" in line: # this happens just so often, so we treat it as special case
+					stroke_follows_fill = True # pay attention...
 				words = line.split()
 				for word in words: # go through the words
 					# showpage will have no effect
@@ -458,12 +507,10 @@ def import_ps(eps,glyph):
 						stack[len(stack)-1]=int(stack[len(stack)-1])
 					elif word == "pop":
 						stack.pop()
-					elif word == "fill":
+					elif word == "fill" and not stroke_follows_fill:
 						if windingnumber(contour) > 0:
 							contour = bezierreverse(contour) # assures that
 						# every contour is clockwise
-						if code == 61:
-							print windingnumber(contour)
 						tempcontour = fontforge.contour()
 						tempcontour = bezierfontforge(contour)
 						if (contour[0][0][0] == contour[-1][-1][0]) and \
@@ -501,7 +548,11 @@ def import_ps(eps,glyph):
 						pen_x = abs(linewidth*ctm[0]/math.cos(alpha))
 						pen_y = abs(linewidth*ctm[3]/math.cos(alpha))
 						tempcontour = fontforge.contour()
-						tempcontour = bezierfontforge(bezieroutline(contour,pen_x,pen_y,alpha))
+						if stroke_follows_fill:
+							tempcontour = bezierfontforge(bezierouteroutline(contour,pen_x,pen_y,alpha))
+							stroke_follows_fill = False
+						else:
+							tempcontour = bezierfontforge(bezieroutline(contour,pen_x,pen_y,alpha))
 						tempcontour.closed = True # the outline should be closed anyway!
 						# (and the contour outline will automatically be clockwise)
 						templayer = fontforge.layer()
