@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20171121
+#mf2outline version 20180328
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -1104,7 +1104,7 @@ if __name__ == "__main__":
 		default=None,
 		help="Force the font encoding to be ENC. Natively supported " \
 		"encodings: OT1 (or ot1), T1 (or t1), unicode. "\
-		"Default: None (this will lead to unicode). The file " \
+		"Default: None (this will lead to T1). The file " \
 		"ENC.enc will be read if it exists in the same directory as " \
 		"the source file (the encoding name inside the encoding file "\
 		"must be named ENC, too).")	
@@ -1347,7 +1347,7 @@ if __name__ == "__main__":
 		print("Setting the font encoding...")
 	if args.encoding == None:
 		if originalencoding == None:
-			font.encoding = "unicode"
+			args.encoding = "t1"
 		else:
 			args.encoding = originalencoding
 	if args.encoding == "Unicode" or args.encoding == "unicode":
