@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20180503
+#mf2outline version 20190416
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -83,19 +83,27 @@ def invertmatrix(m):
 		return m # wrong matrix dimensions, no change
 
 # For the own postscript interpreter we use the following 
-# convention for cubic bezier paths:
+# convention for what is called raw contours
+# (consisting of cubic bezier paths and lines):
 # (0,1)--(3,4)..controls (1,2) and (-2,7)..(8,5)--(2,9)
 # maps bijective to
-# [[(0,1)],[(3,4)],[(1,2),(-2,7),(8,5)],[2,9]]
+# [[(0,1)],[(3,4)],[(1,2),(-2,7),(8,5)],[(2,9)]]
 # We will NOT store, if the path is cyclic, because for
 # elliptical pens this is equivalent to make the first 
 # and the last point the same
+#
+# Furthermore, a raw glyph stands for a simple array of contours, e.g.
+# [ [[(0,1)],[(3,4)],[(1,2),(-2,7),(8,5)],[(2,9)]] , 
+#   [[(10,11)],[(12,13)],[(14,15)],[(10,11)]] ]
 
 def vecadd(a,b):
 	return (a[0]+b[0],a[1]+b[1])
 
 def vecdiff(a,b):
 	return (a[0]-b[0],a[1]-b[1])
+	
+def vecscale(a,k):
+	return (a[0]*k,a[1]*k)
 
 def veclen(a):
 	return (a[0]**2+a[1]**2)**.5
@@ -134,11 +142,6 @@ def pointright(p,d,r):
 def bezierinterpolate(za,dira,zb,zc,dirc):
 	# (xp,yp) is the first control point
 	# (xq,yq) is the second control point
-	# solve([(yp-ya)*xdira=(xp-xa)*ydira,
-	#(yq-yc)*xdirc=(xq-xc)*ydirc,
-	# xb=0.125*(xa+3*xp+3*xq+xc),
-	# yb=0.125*(ya+3*yp+3*yq+yc)],[xp,yp,xq,yq])
-	# yields to
 	xa = float(za[0])
 	ya = float(za[1])
 	xdira = float(dira[0])
@@ -149,9 +152,20 @@ def bezierinterpolate(za,dira,zb,zc,dirc):
 	yc = float(zc[1])
 	xdirc = float(dirc[0])
 	ydirc = float(dirc[1])
-	if ydira*xdirc == xdira*ydirc: # this may be a straight line
-		return [[za],[zc]]
+	if abs( ydira*xdirc - xdira*ydirc ) < 0.00001: # this may be a straight line
+		if abs( (yb-ya)*(xc-xb) - (xb-xa)*(yc-yb) ) < 0.00001: # straight line
+			return [[za],[zc]]
+		else: # still curved line (but needs different computation)
+			# e.g. bezierinterpolate((0,0),(1,0),(.5,.5),(0,1),(-1,0))
+			# dira and dirc are collinear
+			controldir = vecscale(vecdiff(zb,vecscale(vecadd(za,zc),0.5)),4./3)
+			return [[za],[vecadd(za,controldir),vecadd(zc,controldir),zc]]
 	else:
+		# solve([(yp-ya)*xdira=(xp-xa)*ydira,
+		#(yq-yc)*xdirc=(xq-xc)*ydirc,
+		# xb=0.125*(xa+3*xp+3*xq+xc),
+		# yb=0.125*(ya+3*yp+3*yq+yc)],[xp,yp,xq,yq])
+		# yields to
 		xp=(-((-xdira*ydirc-3*ydira*xdirc)*xa+4*xdira*xdirc*ya+xdira
 		*(4*xdirc*yc-8*xdirc*yb-4*ydirc*xc+8*ydirc*xb))
 		/(3*ydira*xdirc-3*xdira*ydirc))
@@ -214,13 +228,36 @@ def beziersidesegment(s,cs,ce,e,r):
 	
 # bezierjoin returns the join of two bezierpaths
 def bezierjoin(first,second):
-	if first[-1][-1] == second[0][0]: 
+	if abs(veclen(vecdiff(first[-1][-1],second[0][0])))<0.00001: 
 		# the last point of the first path equals the first
 		# point of the second path
 		return first + second[1:]
 	else:
 		return first + second
 
+# this would be the successor of bezierarc, but is still problematic...		
+def bezierarc_new(c,s,e,r):
+	sangle = vecangle((1,0),s) + 360  # this is very important!
+	eangle = sangle + vecangle(s,e) # this is very important!
+	print sangle,eangle,vecangle(s,e)
+	# if < 90 degree and no extremum inbetween:
+	if abs(eangle-sangle) <= 90.001 and (sangle // 90 == eangle // 90 \
+	or sangle % 90 < 1e-6 or eangle % 90 < 1e-6):
+		midangle = ((sangle + 0.5*vecangle(s,e))-90*math.copysign(1,vecangle(s,e)))/180*math.pi
+		mid = vecadd(c,vecscaleto((math.cos(midangle),math.sin(midangle)),r))
+		start = pointright(c,s,r)
+		end = pointright(c,e,r)
+		return bezierinterpolate(start,s,mid,end,e)
+	else: # extremum inbetween
+		if eangle > sangle:
+			extremumangle = (sangle // 90+1)*math.pi/2
+		else:
+			extremumangle = (eangle // 90+1)*math.pi/2
+		extremumdir = (round(math.cos(extremumangle)),
+		round(math.sin(extremumangle)))
+		return bezierjoin(bezierarc(c,s,extremumdir,r),
+		bezierarc(c,extremumdir,e,r))
+		
 # bezierarc returns a bezierpath which is a part of a circle
 # around center c with the radius r starting in direction s
 # and ending in direction e
@@ -252,22 +289,26 @@ def bezierreverse(p):
 # (list) bezier path p 
 # the approximation is exact, if the beziersegments are not
 # self-intersecting (which normally not happens when defining fonts)
+# windingnumber > 0 means counterclockwise (mathematically positive)
 def windingnumber(p):
-	flat = [] # first, we flatten the point list
+	flat = [] # first, we flatten the point list (including controls)
 	for i in range(0,len(p)):
 		for j in range(0,len(p[i])):
 			flat.append(p[i][j])
 	angle = 0;
 	for i in range(1,len(flat)-1):
-		angle += vecangle(vecdiff(flat[i],flat[i-1]),
-		vecdiff(flat[i+1],flat[i]))
+		# the following condition is very important, as otherwise
+		# randomly 180 degree could be added
+		if not flat[i] == flat[i-1] and not flat[i+1] == flat[i]:
+			angle += vecangle(vecdiff(flat[i],flat[i-1]),
+			vecdiff(flat[i+1],flat[i]))
 	if (flat[-1][0] == flat[0][0]) and (flat[-1][1] == flat[0][1]): # cyclic
 		angle += vecangle(vecdiff(flat[-1],flat[-2]),
 		vecdiff(flat[1],flat[0]))
 	return angle/360.0
 		
 	
-# bezierfontforge takes a (list) path p
+# bezierfontforge takes a raw (2d list) path p
 # and returns a fontforge contour
 def bezierfontforge(p):
 	c = fontforge.contour()
@@ -277,11 +318,24 @@ def bezierfontforge(p):
 			c.lineTo(p[i][0][0],p[i][0][1])
 		elif len(p[i]) == 3: # this means a cubic bezier
 			c.cubicTo(p[i][0],p[i][1],p[i][2])
+	if abs(veclen(vecdiff(p[-1][-1],p[0][0])))<0.00001: # cyclic
+		c.closed = True
 	return c
 
-# bezierrightpath returns the right part of an outline of a 
-# (list) path p when drawn with a circular pen of radius r
-def bezierrightpath(p,r):
+# takes a contour and returns a contour without redundant points
+def removeRedundantPoints(contour):
+	p = [] # this will be the contour without redundancy
+	if len(contour) > 0:
+		p.append(contour[0])
+	for i in range(1,len(contour)):
+		if not contour[i][-1] == contour[i-1][-1]:
+			p.append(contour[i])
+	return p
+
+# bezierrightpath returns the right part of an outline of a raw
+# (2d list) contour when drawn with a circular pen of radius r
+def bezierrightpath(contour,r):
+	p = removeRedundantPoints(contour)
 	outline = [] 
 	for i in range(1,len(p)):
 		if (len(p[i]) == 1) or (len(p[i]) == 3):
@@ -290,7 +344,7 @@ def bezierrightpath(p,r):
 					outline += beziersidesegment(p[i-1][-1],p[i][0],p[i][1],p[i][2],r)
 				else:
 					outline += beziersidesegment(p[i-1][-1],p[i][0],p[i][1],p[i][2],r)[1:]
-				startdir = vecdiff(p[i][2],p[i][1]) # for the following arc
+				startdir = vecdiff(p[i][2],p[i][1]) # for the following knee
 			elif len(p[i]) == 1: # straight line
 				if i == 1: # include initial point
 					outline += [[pointright(p[i-1][0],vecdiff(p[i][0],p[i-1][-1]),r)]]
@@ -303,28 +357,40 @@ def bezierrightpath(p,r):
 				else: # assume a straight line
 					enddir = vecdiff(p[i-1][-1],p[i][0])
 			elif len(p[i+1]) == 3: # cubic bezier path follows
-				enddir = vecdiff(p[i+1][0],p[i][-1])
+				enddir = vecdiff(p[i+1][0],p[i][-1]) # false?
 			else: # assume that a straight line follows
 				enddir = vecdiff(p[i+1][0],p[i][-1])
-			if not (abs(startdir[0]*enddir[1]-enddir[0]*startdir[1])<0.00001 \
-			and (math.copysign(1,enddir[0]) == math.copysign(1,startdir[0])) \
-			and (math.copysign(1,enddir[1]) == math.copysign(1,startdir[1]))
+			# do we have to add an outside knee (round joint) 
+			# or a inside knee (self overlapping straight path)?
+			if not (abs(vecangle(startdir,enddir))<0.01 \
+			and startdir[0]*enddir[0]+enddir[1]*startdir[1]>0 \
 			or veclen(enddir) == 0 or veclen(startdir) == 0): 
 				# if not nearly same direction (reverse direction is okay)
 				# now check if arc knee is really needed:
 				if not isright(startdir,enddir): # arc knee is necessary 
-					outline += bezierarc(p[i][-1],startdir,enddir,r)
-				else: # arc knee is not necessary
-				#	outline += bezierarc(p[i][-1],vecscaleto(startdir,-1),vecscaleto(enddir,-1),r)
+					outline = bezierjoin(outline,bezierarc(p[i][-1],startdir,enddir,r))
+				else: # arc knee is not necessary because it is inside the knee
 					outline += [[pointright(p[i][-1],enddir,r)]]
 	return outline
+	
+# checks roughly, if the path diameter is smaller than d 
+def isPathDiameterSmallerThan(p,d):
+	for i in range(0,len(p)):
+		for j in range(i+1,len(p)):
+			if veclen(vecdiff(p[i][-1],p[j][-1])) >= d:
+				return False
+	return True
 	
 # beziercircularoutline returns the outline of a 
 # (list) path p when drawn with a circular pen of diameter d
 # the list has to be reversed, as fontforge determines outer = clockwise
 def beziercircularoutline(p,d):
-	return bezierreverse(bezierjoin(bezierrightpath(p,0.5*d),
-	bezierrightpath(bezierreverse(p),0.5*d)))
+	if p[0][0] == p[-1][-1] and isPathDiameterSmallerThan(p,d):
+		outerpath = bezierrightpath(p,0.5*d)
+		return outerpath[:len(outerpath)-2]
+	else:
+		return bezierreverse(bezierjoin(bezierrightpath(p,0.5*d),
+		bezierrightpath(bezierreverse(p),0.5*d)))
 
 # bezierhomogeneous transforms the bezier path p homogeneously with
 # the transformation matrix m
@@ -339,10 +405,10 @@ def bezierhomogeneous(p,m):
 	
 # bezieroutline returns the outline of a (list) path p when drawn with a
 # elliptical pen of a horizontal diameter dx and a vertical diameter dy
-# rotated by the angle alpha
+# rotated by the angle alpha (in radians)
 def bezieroutline(p,dx,dy,alpha):
-	ca = math.cos(math.radians(alpha))
-	sa = math.sin(math.radians(alpha))
+	ca = math.cos(alpha)
+	sa = math.sin(alpha)
 	if dx == 0:
 		return p
 	else:
@@ -351,22 +417,23 @@ def bezieroutline(p,dx,dy,alpha):
 		bezierhomogeneous(p,invertmatrix(m)),dx),m)
 		
 # bezierouteroutline returns the outer part of an 
-# outline of a (list) closed path path when drawn with a
+# outline of a (list) closed contour when drawn with a
 # elliptical pen of a horizontal diameter dx and a vertical diameter dy
 # rotated by the angle alpha
 # this is needed for METAPOSTs filldraw function 
-def bezierouteroutline(path,dx,dy,alpha):
+def bezierouteroutline(contour,dx,dy,alpha):
+	cleancontour = removeRedundantPoints(contour)
 	if dx == 0:
-		return path
+		return cleancontour
 	else:
 		r = 0.5*dx
 		ca = math.cos(math.radians(alpha))
 		sa = math.sin(math.radians(alpha))
 		m = [ca,sa,-sa*dy/dx,ca*dy/dx] # transformation matrix (squeeze and rotate)
-		if windingnumber(path) < 0: # make counterclockwise (yes, really!)
-			p = bezierhomogeneous(bezierreverse(path),invertmatrix(m))
+		if windingnumber(cleancontour) < 0: # make counterclockwise (yes, really!)
+			p = bezierhomogeneous(bezierreverse(cleancontour),invertmatrix(m))
 		else:
-			p = bezierhomogeneous(path,invertmatrix(m))
+			p = bezierhomogeneous(cleancontour,invertmatrix(m))
 		outline = [] 
 		for i in range(1,len(p)):
 			if (len(p[i]) == 1) or (len(p[i]) == 3):
@@ -395,10 +462,145 @@ def bezierouteroutline(path,dx,dy,alpha):
 					# if not nearly same direction (reverse direction is okay)
 					outline += bezierarc(p[i][-1],startdir,enddir,r)
 		return bezierreverse(bezierhomogeneous(outline,m))
+
+# bezier = rawContour
+
+# rounds each point of rawglyph to 1/n (e.g. if n = 2, then it's
+# rounded to halfs)
+def roundRawGlyph(rawcontour,n):
+	rounded = []
+	for i in range(0,len(rawcontour)):
+		rounded.append([])
+		for j in range(0,len(rawcontour[i])):
+			rounded[i].append([])
+			for k in range(0,len(rawcontour[i][j])):
+				rounded[i][j].append([])
+				rounded[i][j][k].append(round(n*rawcontour[i][j][k][0])/n)
+				rounded[i][j][k].append(round(n*rawcontour[i][j][k][1])/n)
+	return rounded
+
+# converts a booleanContour from
+# https://github.com/typemytype/booleanOperations
+# to a "raw" contour (2d list as described above)		
+def booleanContourToRawContour(booleancontour):
+	rawcontour = []
+	l = len(booleancontour._points)
+	if l > 0:
+		rawcontour.append([booleancontour._points[0][1]])
+		i = 1 # iterator
+		while i < l:
+			if booleancontour._points[i][0] == "line": 
+				rawcontour.append([booleancontour._points[i][1]])
+				i += 1
+			else: # handles for curve
+				if i+2 == l: # go back to the beginning point
+					rawcontour.append([booleancontour._points[i][1],
+					booleancontour._points[i+1][1],
+					booleancontour._points[0][1]])
+				else:
+					rawcontour.append([booleancontour._points[i][1],
+					booleancontour._points[i+1][1],
+					booleancontour._points[i+2][1]])	
+				i += 3
+	# booleanContours have to be closed (cyclic), therefore we may
+	# need to add the initial point:
+	if not rawcontour[-1][-1] == rawcontour[0][0]:
+		rawcontour.append([rawcontour[0][0]])
+	return rawcontour
+
+# converts a booleanGlyph from
+# https://github.com/typemytype/booleanOperations
+# to a "raw" glyph (3d list as described above)	
+def booleanGlyphToRawGlyph(booleanglyph):
+	rawglyph = []
+	for c in booleanglyph.contours:
+		rawglyph.append(booleanContourToRawContour(c))
+	return rawglyph
+	
+# converts a "raw" glyph (3d list as described above)	
+# to a defcon.Glyph (https://github.com/typesupply/defcon)
+# in order to be used with the booleanOperations	
+def rawGlyphToDefconGlyph(rawglyph):
+	import defcon
+	defconglyph = defcon.Glyph()
+	pen = defconglyph.getPen()
+	for i in range(0,len(rawglyph)): # going through contours
+		for j in range(0,len(rawglyph[i])): # going through points
+			if j == 0:
+				pen.moveTo(rawglyph[i][j][0])
+			elif len(rawglyph[i][j]) < 3:
+				pen.lineTo(rawglyph[i][j][0])
+			else:
+				pen.curveTo(rawglyph[i][j][0],
+				rawglyph[i][j][1],
+				rawglyph[i][j][2])
+		pen.closePath()
+	return defconglyph
+	
+def romerUnion(rawglyph,otherrawglyph):
+	import booleanOperations.booleanGlyph
+	if (otherrawglyph is None) or (len(otherrawglyph) == 0):
+		return rawglyph
+	else:
+		return booleanGlyphToRawGlyph(
+		booleanOperations.booleanGlyph.BooleanGlyph(
+		rawGlyphToDefconGlyph(rawglyph)).union(
+		booleanOperations.booleanGlyph.BooleanGlyph(
+		rawGlyphToDefconGlyph(otherrawglyph))))
+	
+def romerDifference(rawglyph,excludedrawglyph):
+	import booleanOperations.booleanGlyph
+	if (excludedrawglyph is None) or (len(excludedrawglyph) == 0):
+		return rawglyph
+	else:
+		return booleanGlyphToRawGlyph(
+		booleanOperations.booleanGlyph.BooleanGlyph(
+		rawGlyphToDefconGlyph(roundRawGlyph(rawglyph,1000))).difference(
+		booleanOperations.booleanGlyph.BooleanGlyph(
+		rawGlyphToDefconGlyph(roundRawGlyph(excludedrawglyph,1000)))))
+	
+def romerRemoveOverlap(rawglyph):
+	import booleanOperations.booleanGlyph
+	return booleanGlyphToRawGlyph(
+	booleanOperations.booleanGlyph.BooleanGlyph(
+	rawGlyphToDefconGlyph(rawglyph)).removeOverlap())
+	
+# As we use the convention that a raw contour
+# [[(0,1)],[(3,4)],[(1,2),(-2,7),(8,5)],[(2,9)]]
+# means in MetaPost
+# (0,1)--(3,4)..controls (1,2) and (-2,7)..(8,5)--(2,9)
+# or in PostScript
+# newpath 0 1 moveto
+# 3 4 lineto
+# 1 2 -2 7 8 5 curveto
+# 2 9 lineto stroke
+# we write a a converter from raw contour to PostScript
+# (needed for debugging)
+def rawContourToPS(rawcontour):
+	if len(rawcontour) == 0:
+		return ""
+	else:
+		postscript = "newpath " + str(rawcontour[0][0][0]) + " " \
+		+ str(rawcontour[0][0][1]) + " moveto\n"
+		for i in range(1,len(rawcontour)):
+			if len(rawcontour[i]) == 1:
+				postscript += str(rawcontour[i][0][0]) + " " \
+				+ str(rawcontour[i][0][1]) + " lineto\n"
+			elif len(rawcontour[i]) == 3:
+				postscript += str(rawcontour[i][0][0]) + " " \
+				+ str(rawcontour[i][0][1]) + " " \
+				+ str(rawcontour[i][1][0]) + " " \
+				+ str(rawcontour[i][1][1]) + " " \
+				+ str(rawcontour[i][2][0]) + " " \
+				+ str(rawcontour[i][2][1]) + " curveto\n"
+		return postscript
+	
 		
 # own postscript interpreter for a postscript file "eps" 
 # into the glyph "glyph"
 def import_ps(eps,glyph):
+	from booleanOperations import BooleanOperationManager
+	from booleanOperations.booleanGlyph import BooleanGlyph
 	with open(eps, "r") as epsfile:
 		# read through the lines and write them continously  as contours
 		# in a fontforge char
@@ -406,7 +608,7 @@ def import_ps(eps,glyph):
 		# general postscript
 		#
 		# some variable declarations
-		layer = fontforge.layer()
+		rawglyph = [] # will be filled with raw contours
 		is_white = False # any other color than white will be interpreted as black
 		linewidth = 1 # just default
 		stack = [] # ps stack (coordinate of points, pen dimensions etc.)
@@ -512,35 +714,23 @@ def import_ps(eps,glyph):
 						last = stack.pop()
 						secondlast = stack.pop()
 						stack.extend([last,secondlast])
-					elif word == "truncate":
-						stack[len(stack)-1]=int(stack[len(stack)-1])
+					#elif word == "truncate":
+						# truncate is problematic, as it produces
+						# results that are not exact
+						# I do not know, why this is in METAPOST
+						# stack[len(stack)-1]=int(stack[len(stack)-1])
 					elif word == "pop":
 						stack.pop()
 					elif word == "fill" and not stroke_follows_fill:
-						if windingnumber(contour) > 0:
-							contour = bezierreverse(contour) # assures that
-						# every contour is clockwise
-						tempcontour = fontforge.contour()
-						tempcontour = bezierfontforge(contour)
-						if (contour[0][0][0] == contour[-1][-1][0]) and \
-						(contour[0][0][1] == contour[-1][-1][1]):
-							tempcontour.closed = True
-						templayer = fontforge.layer()
-						templayer += tempcontour
 						if is_white:
-							# actually layer.exclude(templayer), but
-							# exclude does not work properly in fontforge
-							# so we intersect the templayer with the layer
-							# and exclude that from the layer by making
-							# it counterclockwise and removeOverlap()
-							templayer += layer
-							templayer.intersect()
-							for i in range(0,len(templayer)):
-								if templayer[i].isClockwise():
-									templayer[i].reverseDirection()
-						layer += templayer
-						#layer.removeOverlap()
-					elif word == "stroke":
+							if windingnumber(contour) > 0:
+								contour = bezierreverse(contour) # make counterclockwise
+							rawglyph = romerDifference(rawglyph,[contour]) 
+						else:
+							if windingnumber(contour) < 0:
+								contour = bezierreverse(contour) # make clockwise
+							rawglyph.append(contour) #rawglyph = romerUnion(rawglyph,[contour])
+					elif word == "stroke":		
 						# We have to determine the angle and the 
 						# axis of the ellipse that is the product of
 						# a circle with radius=linewidth with the 
@@ -556,29 +746,19 @@ def import_ps(eps,glyph):
 							alpha = math.atan(ctm[1]/ctm[0])
 						pen_x = abs(linewidth*ctm[0]/math.cos(alpha))
 						pen_y = abs(linewidth*ctm[3]/math.cos(alpha))
-						tempcontour = fontforge.contour()
 						if stroke_follows_fill:
-							tempcontour = bezierfontforge(bezierouteroutline(contour,pen_x,pen_y,alpha))
+							tempcontour = bezierouteroutline(contour,pen_x,pen_y,alpha)
 							stroke_follows_fill = False
 						else:
-							tempcontour = bezierfontforge(bezieroutline(contour,pen_x,pen_y,alpha))
-						tempcontour.closed = True # the outline should be closed anyway!
-						# (and the contour outline will automatically be clockwise)
-						templayer = fontforge.layer()
-						templayer += tempcontour
+							tempcontour = bezieroutline(contour,pen_x,pen_y,alpha)
 						if is_white:
-							# actually layer.exclude(templayer), but
-							# exclude does not work properly in fontforge
-							# so we intersect the templayer with the layer
-							# and exclude that from the layer by making
-							# it counterclockwise and removeOverlap()
-							templayer += layer
-							templayer.intersect()
-							for i in range(0,len(templayer)):
-								if templayer[i].isClockwise():
-									templayer[i].reverseDirection()
-						layer = layer + templayer
-						#layer.removeOverlap()
+							if windingnumber(tempcontour) > 0:
+								tempcontour = bezierreverse(tempcontour) # make counterclockwise
+							rawglyph = romerDifference(rawglyph,[tempcontour]) 
+						else:
+							if windingnumber(tempcontour) < 0:
+								tempcontour = bezierreverse(tempcontour) # make clockwise
+							rawglyph.append(tempcontour) #rawglyph = romerUnion(rawglyph,[tempcontour])
 					elif word == "gsave":
 						gsave_contour = list(contour) # clone contour 
 						gsave_ctm = ctm 
@@ -587,7 +767,12 @@ def import_ps(eps,glyph):
 						contour = list(gsave_contour)
 						ctm = gsave_ctm 
 						is_white = gsave_is_white
-		glyph.foreground = layer
+		# now fill the raw glyph into a fontforge glyph:
+		#rawglyphrounded = roundRawGlyph(rawglyph,10)
+		for c in rawglyph:
+			glyph.foreground += bezierfontforge(c)
+			if not args.raw:
+				glyph.removeOverlap()
 	
 def generate_pdf(font,mffile,outputname,tempdir,mainargs):
 	subprocess.call( # run mpost in proof mode
