@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20190416
+#mf2outline version 20190417
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -83,7 +83,7 @@ def invertmatrix(m):
 		return m # wrong matrix dimensions, no change
 
 # For the own postscript interpreter we use the following 
-# convention for what is called raw contours
+# convention for what will be called raw contours
 # (consisting of cubic bezier paths and lines):
 # (0,1)--(3,4)..controls (1,2) and (-2,7)..(8,5)--(2,9)
 # maps bijective to
@@ -291,16 +291,16 @@ def bezierreverse(p):
 # self-intersecting (which normally not happens when defining fonts)
 # windingnumber > 0 means counterclockwise (mathematically positive)
 def windingnumber(p):
-	flat = [] # first, we flatten the point list (including controls)
-	for i in range(0,len(p)):
+	flat = [p[0][0]] # first, we flatten the point list (including controls)
+	for i in range(1,len(p)):
 		for j in range(0,len(p[i])):
-			flat.append(p[i][j])
+			# remove redundant, this is very important, as otherwise
+			# randomly 180 degree could be added
+			if not p[i][j] == flat[-1]: 
+				flat.append(p[i][j])
 	angle = 0;
 	for i in range(1,len(flat)-1):
-		# the following condition is very important, as otherwise
-		# randomly 180 degree could be added
-		if not flat[i] == flat[i-1] and not flat[i+1] == flat[i]:
-			angle += vecangle(vecdiff(flat[i],flat[i-1]),
+		angle += vecangle(vecdiff(flat[i],flat[i-1]),
 			vecdiff(flat[i+1],flat[i]))
 	if (flat[-1][0] == flat[0][0]) and (flat[-1][1] == flat[0][1]): # cyclic
 		angle += vecangle(vecdiff(flat[-1],flat[-2]),
@@ -308,9 +308,9 @@ def windingnumber(p):
 	return angle/360.0
 		
 	
-# bezierfontforge takes a raw (2d list) path p
+# rawPathToFontforgeContour takes a raw (2d list) path p
 # and returns a fontforge contour
-def bezierfontforge(p):
+def rawPathToFontforgeContour(p):
 	c = fontforge.contour()
 	c.moveTo(p[0][0][0],p[0][0][1])
 	for i in range (1,len(p)):
@@ -322,7 +322,7 @@ def bezierfontforge(p):
 		c.closed = True
 	return c
 
-# takes a contour and returns a contour without redundant points
+# takes a raw contour and returns a raw contour without redundant points
 def removeRedundantPoints(contour):
 	p = [] # this will be the contour without redundancy
 	if len(contour) > 0:
@@ -537,7 +537,7 @@ def rawGlyphToDefconGlyph(rawglyph):
 		pen.closePath()
 	return defconglyph
 	
-def romerUnion(rawglyph,otherrawglyph):
+def rawUnion(rawglyph,otherrawglyph):
 	import booleanOperations.booleanGlyph
 	if (otherrawglyph is None) or (len(otherrawglyph) == 0):
 		return rawglyph
@@ -548,22 +548,74 @@ def romerUnion(rawglyph,otherrawglyph):
 		booleanOperations.booleanGlyph.BooleanGlyph(
 		rawGlyphToDefconGlyph(otherrawglyph))))
 	
-def romerDifference(rawglyph,excludedrawglyph):
+def rawDifference(rawglyph,excludedrawglyph):
 	import booleanOperations.booleanGlyph
 	if (excludedrawglyph is None) or (len(excludedrawglyph) == 0):
 		return rawglyph
 	else:
 		return booleanGlyphToRawGlyph(
 		booleanOperations.booleanGlyph.BooleanGlyph(
-		rawGlyphToDefconGlyph(roundRawGlyph(rawglyph,1000))).difference(
+		rawGlyphToDefconGlyph(roundRawGlyph(rawglyph,500))).difference(
 		booleanOperations.booleanGlyph.BooleanGlyph(
-		rawGlyphToDefconGlyph(roundRawGlyph(excludedrawglyph,1000)))))
+		rawGlyphToDefconGlyph(roundRawGlyph(excludedrawglyph,500)))))
 	
-def romerRemoveOverlap(rawglyph):
+def rawRemoveOverlap(rawglyph):
 	import booleanOperations.booleanGlyph
 	return booleanGlyphToRawGlyph(
 	booleanOperations.booleanGlyph.BooleanGlyph(
 	rawGlyphToDefconGlyph(rawglyph)).removeOverlap())
+	
+def fontforgeLayerToDefconGlyph(layer):
+	import defcon
+	defconglyph = defcon.Glyph()
+	pen = defconglyph.getPen()
+	for i in range(0,len(layer)): # going through contours
+		pen.moveTo((layer[i][0].x,layer[i][0].y))
+		j = 1
+		l = len(layer[i])
+		while j < l: # going through points
+			if layer[i][j].on_curve:
+				pen.lineTo((layer[i][j].x,layer[i][j].y))
+				j += 1
+			else: # we assume that this must be a cubic curve
+				pen.curveTo((layer[i][j].x,layer[i][j].y),
+				(layer[i][(j+1)%l].x,layer[i][(j+1)%l].y),
+				(layer[i][(j+2)%l].x,layer[i][(j+2)%l].y))
+				j += 3
+		pen.closePath()
+	return defconglyph
+	
+def booleanGlyphToFontforgeLayer(booleanglyph):
+	layer = fontforge.layer()
+	for c in booleanglyph.contours:
+		contour = fontforge.contour()
+		l = len(c._points)
+		if l > 0:
+			contour.moveTo(c._points[0][1][0],c._points[0][1][1])
+			i = 1 # iterator
+			while i < l:
+				if c._points[i][0] == "line": 
+					contour.lineTo(c._points[i][1])
+					i += 1
+				else: # handles for curve
+					contour.cubicTo(c._points[i][1],
+					c._points[(i+1)%l][1],
+					c._points[(i+2)%l][1])
+					i += 3
+		contour.closed = True
+		layer += contour
+	return layer
+	
+def booleanDifference(fflayer,excludedfflayer):
+	import booleanOperations.booleanGlyph
+	if len(excludedfflayer) == 0:
+		return fflayer
+	else:
+		return booleanGlyphToFontforgeLayer(
+		booleanOperations.booleanGlyph.BooleanGlyph(
+		fontforgeLayerToDefconGlyph(fflayer.round(100))).difference(
+		booleanOperations.booleanGlyph.BooleanGlyph(
+		fontforgeLayerToDefconGlyph(excludedfflayer.round(100))))).reverseDirection()
 	
 # As we use the convention that a raw contour
 # [[(0,1)],[(3,4)],[(1,2),(-2,7),(8,5)],[(2,9)]]
@@ -725,7 +777,7 @@ def import_ps(eps,glyph):
 						if is_white:
 							if windingnumber(contour) > 0:
 								contour = bezierreverse(contour) # make counterclockwise
-							rawglyph = romerDifference(rawglyph,[contour]) 
+							rawglyph = rawDifference(rawglyph,[contour]) 
 						else:
 							if windingnumber(contour) < 0:
 								contour = bezierreverse(contour) # make clockwise
@@ -754,7 +806,7 @@ def import_ps(eps,glyph):
 						if is_white:
 							if windingnumber(tempcontour) > 0:
 								tempcontour = bezierreverse(tempcontour) # make counterclockwise
-							rawglyph = romerDifference(rawglyph,[tempcontour]) 
+							rawglyph = rawDifference(rawglyph,[tempcontour]) 
 						else:
 							if windingnumber(tempcontour) < 0:
 								tempcontour = bezierreverse(tempcontour) # make clockwise
@@ -770,7 +822,7 @@ def import_ps(eps,glyph):
 		# now fill the raw glyph into a fontforge glyph:
 		#rawglyphrounded = roundRawGlyph(rawglyph,10)
 		for c in rawglyph:
-			glyph.foreground += bezierfontforge(c)
+			glyph.foreground += rawPathToFontforgeContour(c)
 			if not args.raw:
 				glyph.removeOverlap()
 	
@@ -1413,7 +1465,7 @@ if __name__ == "__main__":
 				if line[:11] == "mf2outline:":
 					words = line.split()
 					if len(words) > 0 and words[1] == "font_size" and len(words) > 1:
-						args.designsize = int(words[2])
+						args.designsize = float(words[2])
 					break
 		if font.design_size != args.designsize: # remember that we just set 10pt by default
 			font.design_size = args.designsize
