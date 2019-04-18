@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#mf2outline version 20190417
+#mf2outline version 20190418
 
 #This program has been written by Linus Romer for the 
 #Metaflop project by Marco Mueller and Alexis Reigel.
@@ -179,52 +179,70 @@ def bezierinterpolate(za,dira,zb,zc,dirc):
 		+ydira*(3*xdirc*yc-4*ydirc*xc+8*ydirc*xb)
 		+xdira*(ydirc*yc-8*ydirc*yb))/(3*ydira*xdirc-3*xdira*ydirc))
 		return [[za],[(xp,yp),(xq,yq),zc]]
+
+# bezierPointAtTime returns for a cubic bezier path p (s,cs,ce,e)
+# the point at time t where 0<=t<=1
+def bezierPointAtTime(s,cs,ce,e,r,t):
+	return ((1-t)**3*s[0]+3*t*(1-t)**2*cs[0]+3*t**2*(1-t)*ce[0]+t**3*e[0],
+	(1-t)**3*s[1]+3*t*(1-t)**2*cs[1]+3*t**2*(1-t)*ce[1]+t**3*e[1])
+
+# bezierDirectionAtTime returns for a cubic bezier path p (s,cs,ce,e)
+# the direction (first derivative) at time t where 0<=t<=1	
+def bezierDirectionAtTime(s,cs,ce,e,r,t):
+	return (-3*s[0]*(1-t)**2+3*cs[0]*(1-t)**2-6*cs[0]*t*(1-t) \
+	-3*ce[0]*t**2+6*ce[0]*t*(1-t)+3*e[0]*t**2, \
+	-3*s[1]*(1-t)**2+3*cs[1]*(1-t)**2-6*cs[1]*t*(1-t) \
+	-3*ce[1]*t**2+6*ce[1]*t*(1-t)+3*e[1]*t**2)
 	
 # parallel of a cubic bezier path p (s,cs,ce,e)
 # where s = start of p, cs = starting control of p
 # ce = ending control of p, e = end of p 
 # in distance r at the right iff r>0 (else left)
 def beziersidesegment(s,cs,ce,e,r):
-	# compute the midpoint (t = 0.5) of the original path
-	mid = (0.125*(s[0]+3*cs[0]+3*ce[0]+e[0]),
-	0.125*(s[1]+3*cs[1]+3*ce[1]+e[1]))
-	middir = (-s[0]-cs[0]+ce[0]+e[0],
-	-s[1]-cs[1]+ce[1]+e[1])
-	midside = pointright(mid,middir,r)
+	divideInTwo = False # should the side segment contain two segments?
 	if (cs[0]-s[0] == 0) and (cs[1]-s[1] == 0) \
 	and (ce[0]-e[0] == 0) and (ce[1]-e[1] == 0): 
 		# this means both control points lie on the start and end point
 		# hence the path must be a straight line
-		xstartdir = e[0]-s[0]
-		ystartdir = e[1]-s[1]
-		xenddir = e[0]-s[0]
-		yenddir = e[1]-s[1]
+		startdir = vecnorm(vecdiff(e,s))
+		enddir = vecnorm(vecdiff(e,s))
 	elif (cs[0]-s[0] == 0) and (cs[1]-s[1] == 0):
 		# the first control point lies on the start point
-		xstartdir = s[0]-2*cs[0]+ce[0] # proportional to second derivative
-		ystartdir = s[1]-2*cs[1]+ce[1]
-		xenddir = e[0]-ce[0]
-		yenddir = e[1]-ce[1]
+		# proportional to second derivative:
+		startdir = vecnorm(vecadd(vecdiff(s,vecscale(cs,2)),ce))
+		enddir = vecnorm(vecdiff(e,ce))
 	elif (ce[0]-e[0] == 0) and (ce[1]-e[1] == 0):
 		# the second control point lies on the end point
-		xstartdir = cs[0]-s[0]
-		ystartdir = cs[1]-s[1]
-		xenddir = e[0]-2*ce[0]+cs[0]
-		yenddir = e[1]-2*ce[1]+cs[1]
+		startdir = vecnorm(vecdiff(cs,s))
+		# proportional to second derivative:
+		enddir = vecnorm(vecadd(vecdiff(e,vecscale(ce,2)),cs))
 	else:
-		xstartdir = cs[0]-s[0]
-		ystartdir = cs[1]-s[1]
-		xenddir = e[0]-ce[0]
-		yenddir = e[1]-ce[1]
-	start = ( s[0]+ystartdir
-	/(xstartdir**2+ystartdir**2)**.5*r ,
-	s[1]-xstartdir
-	/(xstartdir**2+ystartdir**2)**.5*r )
-	end = ( e[0]+yenddir
-	/(xenddir**2+yenddir**2)**.5*r ,
-	e[1]-xenddir
-	/(xenddir**2+yenddir**2)**.5*r )
-	return bezierinterpolate(start,(xstartdir,ystartdir),midside,end,(xenddir,yenddir))
+		startdir = vecnorm(vecdiff(cs,s))
+		enddir = vecnorm(vecdiff(e,ce))
+		# check, if there is an inflection point inbetween
+		# or if the angle is too big
+		# then we will divide the path in 2 instead of 1 part
+		divideInTwo = (vecangle(startdir,vecdiff(e,s)) \
+		*vecangle(enddir,vecdiff(e,s)) > 0 \
+		or vecangle(startdir,enddir) > 90.001)
+	start = (s[0]+startdir[1]*r,s[1]-startdir[0]*r)
+	end = (e[0]+enddir[1]*r,e[1]-enddir[0]*r)
+	# compute the midpoint (t = 0.5) of the original path
+	mid = bezierPointAtTime(s,cs,ce,e,r,0.5)
+	middir = bezierDirectionAtTime(s,cs,ce,e,r,0.5)
+	midside = pointright(mid,middir,r)
+	if divideInTwo:
+		mida = bezierPointAtTime(s,cs,ce,e,r,0.25)
+		midadir = bezierDirectionAtTime(s,cs,ce,e,r,0.25)
+		midaside = pointright(mida,midadir,r)
+		midb = bezierPointAtTime(s,cs,ce,e,r,0.75)
+		midbdir = bezierDirectionAtTime(s,cs,ce,e,r,0.75)
+		midbside = pointright(midb,midbdir,r)
+		return bezierjoin(
+		bezierinterpolate(start,startdir,midaside,midside,middir),
+		bezierinterpolate(midside,middir,midbside,end,enddir))
+	else:
+		return bezierinterpolate(start,startdir,midside,end,enddir)
 	
 # bezierjoin returns the join of two bezierpaths
 def bezierjoin(first,second):
@@ -461,6 +479,10 @@ def bezierouteroutline(contour,dx,dy,alpha):
 				or veclen(enddir) == 0 or veclen(startdir) == 0): 
 					# if not nearly same direction (reverse direction is okay)
 					outline += bezierarc(p[i][-1],startdir,enddir,r)
+		# The outline MUST be closed, but due to rounding errors
+		# the last point may not exactely be the same as the first.
+		# Therefore we will correct that:
+		outline[-1][-1] = outline[0][0]
 		return bezierreverse(bezierhomogeneous(outline,m))
 
 # bezier = rawContour
