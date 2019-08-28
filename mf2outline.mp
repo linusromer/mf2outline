@@ -18,7 +18,7 @@
 
 % Copyright 2014 by Linus Romer
 
-string base_name, base_version; base_name="mf2outline"; base_version="20190416";
+string base_name, base_version; base_name="mf2outline"; base_version="20190417";
 
 message "Preloading the mf2outline base, version "&base_version&": preliminaries,";
 
