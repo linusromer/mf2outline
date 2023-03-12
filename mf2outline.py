@@ -257,7 +257,7 @@ def bezierjoin(first,second):
 def bezierarc_new(c,s,e,r):
 	sangle = vecangle((1,0),s) + 360  # this is very important!
 	eangle = sangle + vecangle(s,e) # this is very important!
-	print sangle,eangle,vecangle(s,e)
+	print(sangle,eangle,vecangle(s,e))
 	# if < 90 degree and no extremum inbetween:
 	if abs(eangle-sangle) <= 90.001 and (sangle // 90 == eangle // 90 \
 	or sangle % 90 < 1e-6 or eangle % 90 < 1e-6):
