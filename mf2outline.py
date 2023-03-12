@@ -1777,7 +1777,7 @@ if __name__ == "__main__":
 		currentencoding = font.encoding
 		font.encoding = "unicode" #add space for non-TeX use
 		font.createChar(32)
-		font[32].width = font_normal_space
+		font[32].width = int(font_normal_space)
 		font.encoding = currentencoding
 	
 	if not args.raw:
